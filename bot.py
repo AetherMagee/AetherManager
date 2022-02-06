@@ -2199,11 +2199,26 @@ async def chatCleaner(msg):
     await myReply.delete()
 
 
-@bot.on(events.NewMessage(pattern="/exec", from_users=myid))
+@bot.on(events.NewMessage(pattern="/roll"))
 @logger.catch
-async def executor(msg):
-    result = exec(msg.raw_text.replace("/exec ", ""))
-    await msg.reply(result)
+async def roll(msg):
+    if len(msg.raw_text.split(" ")) > 1:
+        limit = None
+        for element in msg.raw_text.split(" "):
+            if limit:
+                break
+            try:
+                limit = int(element)
+            except:
+                pass
+    else:
+        limit = 100
+    rollResult = random.randint(0, limit)
+    await asyncio.sleep(2)
+    myReply = await msg.reply(f"**__Нароллил {rollResult}__**")
+    await asyncio.sleep(15)
+    await myReply.delete()
+
 
 
 # Checking if bot was restarted and other stuff (kinda useless now, but I'll let it be...)
