@@ -1,0 +1,9 @@
+psutil
+requests
+telethon
+SpeechRecognition
+better_exceptions
+loguru
+emoji
+pillow
+schedule
