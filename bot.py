@@ -1580,17 +1580,11 @@ async def kickme(msg):
 @bot.on(events.NewMessage(pattern="/cube|/dice"))
 @logger.catch
 async def cube(msg):
-    myReply = await msg.reply("❌ **__Функция временно отключена__**")
-    await asyncio.sleep(5)
-    await myReply.delete()
-    return
     global requests_per_this_session
     requests_per_this_session += 1
     messages_to_delete = []
     my_darts = await bot.send_file(msg.chat_id, types.InputMediaDice('🎲'), reply_to=msg)
     messages_to_delete.append(my_darts.id)
-    my_hint = await msg.reply('**__Киньте кубик в ответ на мой выше, посмотрим, кому повезёт больше! :P__**')
-    messages_to_delete.append(my_hint.id)
     can_continue = False
     try:
         async with bot.conversation(msg.chat_id, timeout=20) as conv:
@@ -1617,6 +1611,7 @@ async def cube(msg):
         await asyncio.sleep(3.5)
         if my_value == his_value:
             result = await msg.reply("**__Увы, ничья__**")
+            num = None
         elif my_value > his_value:
             num = 0 - (random.randint(1, 20) * (my_value - his_value))
             result = await msg.reply(f"**__Вы проиграли, и теряете {str(num).replace('-', '')} монет.__**")
@@ -1625,13 +1620,19 @@ async def cube(msg):
             result = await msg.reply(f"**__Вы выиграли, и получаете {str(num)} монет.__**")
         messages_to_delete.append(result.id)
         if num:
-            cursor.execute(f"SELECT money FROM fetched_users WHERE id={msg.sender.id}")
-            current_coins = int(cursor.fetchone()[0])
-            new_coins = current_coins + num
-            cursor.execute(f"UPDATE fetched_users SET money = {str(new_coins)} WHERE id = {msg.sender.id}")
-            db_main.commit()
+            dbEntry = db.getUserEntry(msg.sender.id)
+            if dbEntry == "NotFound":
+                await parseAllUsers(msg.chat)
+                return
+            moneyCurrent = dbEntry[0][4]
+            moneyNew = moneyCurrent + num
+            db.editUserEntry(msg.sender.id, "money", str(moneyNew))
     await asyncio.sleep(5)
-    await bot.delete_messages(msg.chat, messages_to_delete)
+    for message in messages_to_delete:
+        try:
+            await bot.delete_messages(msg.chat, message)
+        except:
+            pass
 
 
 @bot.on(events.NewMessage(pattern='/screenshot|/url|скриншот|screenshot|\?'))
