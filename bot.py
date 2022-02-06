@@ -119,15 +119,6 @@ async def start(msg):
     global requests_per_this_session
     requests_per_this_session += 1
     if msg.is_private:
-        # #         text = """**Привет! Меня зовут ЭзерМенеджер, и я - бот, созданный для удобного администрирования групп в Telegram! В меня также постоянно добавляют новые функции!\nСейчас я могу:
-        # # 1) Выполнять базовое управление чатом(команды /kick, /mute и так далее)
-        # # 2) Запоминать пользователей с помощью системы альтернативных имён(/remember ИМЯ ответом на сообщение пользователя, которого нужно запомнить.)
-        # # 3) Имею глобальную систему репутации
-        # # 4) Могу мутить даже админов путём удаления их сообщений (по умолчанию отлючено, но вы всегда можете это включить и устроить админские войны :P)
-        # # 5) Могу передавать сообщения анонимно
-        # # 6) Могу запомнить ваши контакты и сохранить заметки
-        # # 7) Имею простую интеграцию своей базы данных с другими ботами(/aboutbot в помощь)**"""
-        #         await bot.send_message(msg.chat_id, text)
         await asyncio.sleep(0.65)
         await msg.reply("👋")
         async with bot.action(msg.chat, "typing"):
@@ -316,9 +307,6 @@ async def altNameAddCommand(msg):
 async def help(msg):
     global requests_per_this_session
     requests_per_this_session += 1
-    # **/addcontact** - __Добавить себе контактную ссылку в меню /who. Использование: /addcontact [НазваниеСоцСети] [НикИлиИмя] [Ссылка]__
-    # **/delcontact** - __Удаляет контакт из меню /who. Использование: /delcontact [НазваниеСоцСети]__
-    # """) # **/screenshot / /url / скриншот / ?** - __Команды для скриншота сайта. Принимают ответ на сообщение со ссылкой__
     pureCommand = msg.text.replace("/helpme@aethermgr_bot", "").replace("/helpme", "").replace(" ", "")
     availibleCommands = {"aboutbot": "**__Информация о боте и данные о его создателях__**",
                          "who": "**__Получение информации о пользователе.\n\nИспользование: /who @username | /who альт.имя | /who (ответом на сообщение необходимого пользователя)__**",
@@ -515,6 +503,8 @@ async def hello(event):
             if funcOut == "Error":
                 await notify_admins(event.chat,
                                     f"🔔 **__Сервисное уведомление из {event.chat.title}\nСожалею, что надоедаю уведомлениями с самого момента добавления, но во время добавления вашего чата в базу данных произошла ошибка. Пожалуйста, используйте /bugreport в чате, указанном выше")
+                return
+            await parseAllUsers(event.chat)
 
 
 # @bot.on(events.ChatAction)
@@ -1164,31 +1154,6 @@ async def muteAdminsWorker(msg):
                         f"Error while deleting mutedAdmin's message: {msg.sender.id} in {msg.chat_id}, msgid: {msg.id}")
 
 
-# @bot.on(events.NewMessage(func=lambda x: not x.is_private))
-# @logger.catch
-# async def muted_admins_message_eraser(msg):
-#     try:
-#         target_permissions = await bot.get_permissions(msg.chat, msg.sender)
-#     except:
-#         return
-#     if target_permissions.is_admin:
-#         cursor.execute(f"SELECT mute_admins_allowed FROM settings WHERE chat_id = {msg.chat_id}")
-#         try:
-#             if bool(cursor.fetchone()[0]):
-#                 cursor.execute(f"SELECT EXISTS(SELECT * from muted_admins WHERE user_id = {msg.sender.id} AND chid = {msg.chat_id})")
-#                 if bool(cursor.fetchone()[0]):
-#                     try: 
-#                         await msg.delete()
-#                     except:
-#                         logger.error(f"Failed to remove muted admin message from {msg.sender.id} in {msg.chat.title}")
-#         except:
-#             logger.warning(f"Failed to get settings of {msg.chat.title}. Trying to fix automatically...")
-#             try:
-#                 cursor.execute(f"INSERT INTO settings (chat_id) VALUES ({msg.chat_id})")
-#                 db_main.commit()
-#                 logger.info("Fixed database successfully!")
-#             except:
-#                 logger.error("Error while fixing DB: ")
 
 
 @bot.on(events.NewMessage(pattern='/settings'))
@@ -1597,45 +1562,6 @@ async def status(msg):
     await my_msg.delete()
 
 
-# @bot.on(events.NewMessage())
-# @logger.catch
-# async def badLinkAndUserEraser(msg):
-#     if msg.entities:
-#         for ent in msg.entities:
-#             if type(ent) in [MessageEntityUrl, MessageEntityTextUrl]:
-#                 if type(ent) == MessageEntityTextUrl:
-#                     url = str(ent.url)
-#                 else:
-#                     url = msg.raw_text[ent.offset:ent.offset + ent.length]
-#                 if "t.me" in url:
-#                     cursor.execute(f"SELECT allow_invite_links FROM settings WHERE chat_id = {msg.chat_id}")
-#                     if not bool(cursor.fetchone()[0]):
-#                         try:
-#                             await msg.delete()
-#                             await bot.send_message(msg.chat_id, '**{}**, __здесь запрещены пригласительные ссылки!__'.format(str(msg.sender.first_name)))
-#                         except:
-#                             logger.warning("Failed to remove invite link in " + msg.chat.title)
-#                             my_warning = await bot.send_message(msg.chat, "❌ **__Не удалось удалить запрещённую ссылку! Пожалуйста, проверьте права бота__**")
-#                             await asyncio.sleep(7)
-#                             await my_warning.delete()
-#                 elif "tiktok" in url:
-#                     cursor.execute(f"SELECT allow_tiktok_links FROM settings WHERE chat_id = {msg.chat_id}")
-#                     if not bool(cursor.fetchone()[0]):
-#                         try:
-#                             await msg.delete()
-#                             await bot.send_message(msg.chat_id, '**{}**, __здесь запрещены ссылки, ведущие на TikTok!__'.format(str(msg.sender.first_name)))
-#                         except:
-#                             logger.warning("Failed to remove tt link in " + msg.chat.title)
-#                             my_warning = await bot.send_message(msg.chat, "❌ **__Не удалось удалить запрещённую ссылку! Пожалуйста, проверьте права бота__**")
-#                             await asyncio.sleep(7)
-#                             await my_warning.delete()
-#                 else:
-#                     pass
-#
-#     if type(msg.sender) == telethon.tl.types.Channel:
-#         cursor.execute(f"SELECT allow_channels FROM settings WHERE chat_id = {msg.chat_id}")
-#         if not bool(cursor.fetchone[0]):
-#             await msg.delete()
 
 
 @bot.on(events.NewMessage(pattern='/kickme'))
@@ -2176,28 +2102,6 @@ async def bugreport(msg):
         pass
 
 
-# @bot.on(events.NewMessage(pattern="/checkdb"))
-# @logger.catch
-# async def databaseRepair(msg):
-#     if msg.is_private:
-#         return
-#     cursor.execute(f"SELECT EXISTS(SELECT * FROM settings WHERE chat_id = {msg.chat_id})")
-#     if bool(cursor.fetchone()[0]):
-#         my_reply = await msg.reply("**__Проверка завершена, восстановление не требуется__**")
-#     else:
-#         try:
-#             cursor.execute(f"INSERT INTO settings (chat_id) VALUES ({msg.chat_id})")
-#             db_main.commit()
-#             my_reply = await msg.reply("**__Проверка завершена, работа параметров восстановлена__**")
-#         except:
-#             my_reply = await msg.reply("**__Проверка завершена, во время восстановления произошла ошибка. Отчёт был отправлен разработчикам.__**")
-#             logger.exception("Error on fixing database:")
-#     await asyncio.sleep(5)
-#     try:
-#         await my_reply.delete()
-#     except:
-#         pass
-
 
 @bot.on(events.NewMessage(pattern="/getsettings", func=lambda x: not x.is_private))
 @logger.catch
@@ -2244,15 +2148,6 @@ async def report(msg):
                 pass
     await msg.reply(f"✅ **__Следующее кол-во администраторов было уведомлено: {str(notified)}__**")
 
-
-# Debug function, some a**hole likes to give me a shit unicode altname, I'll leave it here until unicode alts will be fixed
-# @bot.on(events.NewMessage(pattern="/altnamecleanup", from_users=myid))
-# @logger.catch
-# async def altNameCleanup(msg):
-#     reply = await msg.get_reply_message()
-#     cursor.execute("UPDATE fetched_users SET altnames = \"Нету; \" WHERE id = " + str(reply.sender.id))
-#     db_main.commit()
-#     await msg.reply("Done.")
 
 
 def backupDatabase():
