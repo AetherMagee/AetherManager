@@ -2218,8 +2218,14 @@ async def roll(msg):
     rollResult = random.randint(0, limit)
     await asyncio.sleep(2)
     myReply = await msg.reply(f"**__Нароллил {rollResult}__**")
+    if rollResult == 727:
+        await msg.reply("WYSI")
     await asyncio.sleep(15)
     await myReply.delete()
+    try:
+        await msg.delete()
+    except:
+        return
 
 
 
