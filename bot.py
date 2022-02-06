@@ -2202,6 +2202,8 @@ async def chatCleaner(msg):
 @bot.on(events.NewMessage(pattern="/roll"))
 @logger.catch
 async def roll(msg):
+    global requests_per_this_session
+    requests_per_this_session += 1
     if len(msg.raw_text.split(" ")) > 1:
         limit = None
         for element in msg.raw_text.split(" "):
