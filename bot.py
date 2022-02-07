@@ -1635,6 +1635,65 @@ async def cube(msg):
             pass
 
 
+
+@bot.on(events.NewMessage(pattern="/darts"))
+@logger.catch
+async def darts(msg):
+    global requests_per_this_session
+    requests_per_this_session += 1
+    messages_to_delete = []
+    my_darts = await bot.send_file(msg.chat_id, types.InputMediaDice('🎯'), reply_to=msg)
+    messages_to_delete.append(my_darts.id)
+    can_continue = False
+    try:
+        async with bot.conversation(msg.chat_id, timeout=20) as conv:
+            reply_darts = await conv.get_reply(my_darts)
+            while reply_darts.sender.id != msg.sender.id:
+                reply_darts = await conv.get_reply(my_darts)
+        messages_to_delete.append(reply_darts.id)
+        can_continue = True
+    except asyncio.exceptions.TimeoutError:
+        timeout_notification = await msg.reply('**__Вы не успели отправить дартс!__**')
+        messages_to_delete.append(timeout_notification.id)
+    if reply_darts.media:
+        if reply_darts.media.emoticon != "🎯":
+            fake_notification = await msg.reply("**__Это не дартс!__**")
+            messages_to_delete.append(fake_notification.id)
+            can_continue = False
+    else:
+        fake_notification = await msg.reply("**__Это не дартс!__**")
+        messages_to_delete.append(fake_notification.id)
+        can_continue = False
+    if can_continue:
+        my_value = my_darts.media.value
+        his_value = reply_darts.media.value
+        await asyncio.sleep(3.5)
+        if my_value == his_value:
+            result = await msg.reply("**__Увы, ничья__**")
+            num = None
+        elif my_value > his_value:
+            num = 0 - (random.randint(1, 20) * (my_value - his_value))
+            result = await msg.reply(f"**__Вы проиграли, и теряете {str(num).replace('-', '')} монет.__**")
+        else:
+            num = random.randint(1, 20) * (his_value - my_value)
+            result = await msg.reply(f"**__Вы выиграли, и получаете {str(num)} монет.__**")
+        messages_to_delete.append(result.id)
+        if num:
+            dbEntry = db.getUserEntry(msg.sender.id)
+            if dbEntry == "NotFound":
+                await parseAllUsers(msg.chat)
+                return
+            moneyCurrent = dbEntry[0][4]
+            moneyNew = moneyCurrent + num
+            db.editUserEntry(msg.sender.id, "money", str(moneyNew))
+    await asyncio.sleep(5)
+    for message in messages_to_delete:
+        try:
+            await bot.delete_messages(msg.chat, message)
+        except:
+            pass
+
+
 @bot.on(events.NewMessage(pattern='/screenshot|/url|скриншот|screenshot|\?'))
 @logger.catch
 async def get_link_for_scrn(msg):
@@ -1749,62 +1808,6 @@ async def preinit():
     logger.debug("Scheduled database backup for 30 mins")
     logger.info('PreInit success!')
 
-
-@bot.on(events.NewMessage(pattern="/darts"))
-@logger.catch
-async def darts(msg):
-    myReply = await msg.reply("❌ **__Функция временно отключена__**")
-    await asyncio.sleep(5)
-    await myReply.delete()
-    return
-    global requests_per_this_session
-    requests_per_this_session += 1
-    messages_to_delete = []
-    my_darts = await bot.send_file(msg.chat_id, types.InputMediaDice('🎯'), reply_to=msg)
-    messages_to_delete.append(my_darts.id)
-    my_hint = await msg.reply('**__Сыграйте в дартс в ответ на мой выше, посмотрим, кому повезёт больше! :P__**')
-    messages_to_delete.append(my_hint.id)
-    can_continue = False
-    try:
-        async with bot.conversation(msg.chat_id, timeout=20) as conv:
-            reply_darts = await conv.get_reply(my_darts)
-            while reply_darts.sender.id != msg.sender.id:
-                reply_darts = await conv.get_reply(my_darts)
-        messages_to_delete.append(reply_darts.id)
-        can_continue = True
-    except asyncio.exceptions.TimeoutError:
-        timeout_notification = await msg.reply('**__Вы не успели сыграть в дартс!__**')
-        messages_to_delete.append(timeout_notification.id)
-    if reply_darts.media:
-        if reply_darts.media.emoticon != "🎯":
-            fake_notification = await msg.reply("**__Это не дартс!__**")
-            messages_to_delete.append(fake_notification.id)
-            can_continue = False
-    else:
-        fake_notification = await msg.reply("**__Это не дартс!__**")
-        messages_to_delete.append(fake_notification.id)
-        can_continue = False
-    if can_continue:
-        my_value = my_darts.media.value
-        his_value = reply_darts.media.value
-        await asyncio.sleep(3.5)
-        if my_value == his_value:
-            result = await msg.reply("**__Увы, ничья__**")
-        elif my_value > his_value:
-            num = 0 - (random.randint(1, 20) * (my_value - his_value))
-            result = await msg.reply(f"**__Вы проиграли, и теряете {str(num).replace('-', '')} монет.__**")
-        else:
-            num = random.randint(1, 20) * (his_value - my_value)
-            result = await msg.reply(f"**__Вы выиграли, и получаете {str(num)} монет.__**")
-        messages_to_delete.append(result.id)
-        if num:
-            cursor.execute(f"SELECT money FROM fetched_users WHERE id={msg.sender.id}")
-            current_coins = int(cursor.fetchone()[0])
-            new_coins = current_coins + num
-            cursor.execute(f"UPDATE fetched_users SET money = {str(new_coins)} WHERE id = {msg.sender.id}")
-            db_main.commit()
-    await asyncio.sleep(5)
-    await bot.delete_messages(msg.chat, messages_to_delete)
 
 
 @bot.on(events.NewMessage(pattern="/note|сохранить|/save", func=lambda x: not x.is_private and x.is_reply))
@@ -2065,14 +2068,14 @@ async def baltop(msg):
             text += f"{line[1]} - {line[3]} очков репутации\n"
     await msg.reply(text + "__**")
 
-
+# Debug function
 @bot.on(events.NewMessage(pattern="/fullstring", from_users=myid))
 @logger.catch
 async def fullstring(msg):
     reply = await msg.get_reply_message()
     await msg.reply(reply.stringify())
 
-
+# Debug function
 @bot.on(events.NewMessage(pattern="/fulluser", from_users=myid))
 @logger.catch
 async def fulluser(msg):
@@ -2216,7 +2219,6 @@ async def roll(msg):
     else:
         limit = 100
     rollResult = random.randint(0, limit)
-    await asyncio.sleep(2)
     myReply = await msg.reply(f"**__Нароллил {rollResult}__**")
     if rollResult == 727:
         await msg.reply("WYSI")
