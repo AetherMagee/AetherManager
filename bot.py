@@ -45,6 +45,7 @@ myid = 946202437
 botid = int(conf.TOKEN.split(":")[0])
 already_changed_rep = []
 already_acted = []
+updateOngoing = False
 
 filtersDictionary = {}  # <--- WIP
 # Planned format: 
@@ -949,7 +950,7 @@ async def unban(msg):
         return
     try:
         await bot.edit_permissions(msg.chat, target, send_messages=True)
-        myReply = await msg.reply("✅ **__Готово, пользователь был размучен__**")
+        myReply = await msg.reply("✅ **__Готово, пользователь был разбанен__**")
         await asyncio.sleep(5)
         await myReply.delete()
         return
@@ -1799,9 +1800,25 @@ async def link_screenshot(event, msg, url, my_msg):
         except TimeoutException:
             await msg.reply('❌ **__Процесс занял слишком много времени и был прерван.__**')
 
+def updateChecker():
+    logger.debug("Checking for updates...")
+    updateCheck = subprocess.run("git diff", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if not bool(updateCheck.stdout):
+        logger.debug("No updates found!")
+        return
+    logger.debug("Found updates, installing...")
+    global updateOngoing
+    updateOngoing = True
+    updateProcess = subprocess.run("git pull", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if not updateProcess.stderr:
+        subprocess.Popen("./etc/restarter.sh", shell=True)
+        return
+    logger.critical("Error while updating!")
+
 
 @logger.catch
 async def preinit():
+    updateChecker()
     schedule.every(30).minutes.do(backupDatabase)
     backgroundScheduleThread = threading.Thread(target=scheduleThreader, daemon=True)
     backgroundScheduleThread.start()
@@ -2237,6 +2254,8 @@ bot.loop.run_until_complete(preinit())
 
 # Starting the bot itself, all the code before is the initiation of functions and handlers
 logger.info("Running Init...")
+
+
 
 
 @logger.catch
