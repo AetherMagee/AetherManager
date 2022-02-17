@@ -678,7 +678,7 @@ async def mute(msg):
         # Here the real sh*t comes...
         # First of all, lets check if we even allowed to mute an admin...
         muteAdmins = db.getSettingsForChat(msg.chat_id, "mute_admins_allowed")
-        if muteAdmins == "ChatNotFound": db.addChatEntry(msg.chat_id); await mute(msg)
+        if muteAdmins == "ChatNotFound": db.addChatEntry(msg.chat_id); await mute(msg); return
         if not bool(muteAdmins):
             myReply = await msg.reply(
                 "❌ **__Функция MuteAdmins в настоящее время отключена в этом чате. Если вы - создатель чата, используйте /settings для подробностей__**")
@@ -724,16 +724,14 @@ async def unmute(msg):
     if not found:
         # Trying to get target by get_entity()
         try:
-            target = await bot.get_entity(msgTextSplit[0])
-            if not target.left:
-                msgTextSplit.remove(msgTextSplit[0])
-                found = True
+            target = await bot.get_entity(msgTextSplit[0].replace("@", ""))
+            msgTextSplit.remove(msgTextSplit[0])
+            found = True
         except:
             try:
-                target = await bot.get_entity(int(msgTextSplit[0]))
-                if not target.left:
-                    msgTextSplit.remove(msgTextSplit[0])
-                    found = True
+                target = await bot.get_entity(int(msgTextSplit[0].replace("@", "")))
+                msgTextSplit.remove(msgTextSplit[0])
+                found = True
             except:
                 found = False
     if not found:
@@ -744,7 +742,7 @@ async def unmute(msg):
                 if altNameCurrentString == "":
                     altNameCurrentString = word
                 else:
-                    altNameCurrentString + " " + word
+                    altNameCurrentString = altNameCurrentString + " " + word
                 result = db.searchUserByAltName(altNameCurrentString)
                 if result != "NotFound":
                     target = await bot.get_entity(result)
@@ -816,16 +814,14 @@ async def ban(msg):
     if not found:
         # Trying to get target by get_entity()
         try:
-            target = await bot.get_entity(msgTextSplit[0])
-            if not target.left:
-                msgTextSplit.remove(msgTextSplit[0])
-                found = True
+            target = await bot.get_entity(msgTextSplit[0].replace("@", ""))
+            msgTextSplit.remove(msgTextSplit[0])
+            found = True
         except:
             try:
-                target = await bot.get_entity(int(msgTextSplit[0]))
-                if not target.left:
-                    msgTextSplit.remove(msgTextSplit[0])
-                    found = True
+                target = await bot.get_entity(int(msgTextSplit[0].replace("@", "")))
+                msgTextSplit.remove(msgTextSplit[0])
+                found = True
             except:
                 found = False
     if not found:
@@ -836,7 +832,7 @@ async def ban(msg):
                 if altNameCurrentString == "":
                     altNameCurrentString = word
                 else:
-                    altNameCurrentString + " " + word
+                    altNameCurrentString = altNameCurrentString + " " + word
                 result = db.searchUserByAltName(altNameCurrentString)
                 if result != "NotFound":
                     target = await bot.get_entity(result)
@@ -909,16 +905,14 @@ async def unban(msg):
     if not found:
         # Trying to get target by get_entity()
         try:
-            target = await bot.get_entity(msgTextSplit[0])
-            if not target.left:
-                msgTextSplit.remove(msgTextSplit[0])
-                found = True
+            target = await bot.get_entity(msgTextSplit[0].replace("@", ""))
+            msgTextSplit.remove(msgTextSplit[0])
+            found = True
         except:
             try:
-                target = await bot.get_entity(int(msgTextSplit[0]))
-                if not target.left:
-                    msgTextSplit.remove(msgTextSplit[0])
-                    found = True
+                target = await bot.get_entity(int(msgTextSplit[0].replace("@", "")))
+                msgTextSplit.remove(msgTextSplit[0])
+                found = True
             except:
                 found = False
     if not found:
@@ -929,7 +923,7 @@ async def unban(msg):
                 if altNameCurrentString == "":
                     altNameCurrentString = word
                 else:
-                    altNameCurrentString + " " + word
+                    altNameCurrentString = altNameCurrentString + " " + word
                 result = db.searchUserByAltName(altNameCurrentString)
                 if result != "NotFound":
                     target = await bot.get_entity(result)
@@ -1195,7 +1189,8 @@ async def setCommand(msg):
             await setCommand(msg)
         else:
             return
-    if checkIfCreatorOnly == "CreatorOnly":
+    print("Is creator: " + str(requesterPermissions.is_creator))
+    if checkIfCreatorOnly[0][0] == "creatoronly" or checkIfCreatorOnly[0][0] == "CreatorOnly":
         if not requesterPermissions.is_creator:
             myReply = await msg.reply("❌ **__Только создатель чата может изменять параметры__**")
             await asyncio.sleep(5)
@@ -1313,7 +1308,7 @@ async def setCommand(msg):
 @logger.catch
 async def memeui(msg):
     try:
-        get_command = """SELECT react_on_xiaomi FROM settings WHERE chat_id = {cid}""".format(cid=str(msg.chat_id))
+        get_command = """SELECT react_on_xiaomi FROM chats WHERE chid = {cid}""".format(cid=str(msg.chat_id))
         db.chatsCursor.execute(get_command)
         result = db.chatsCursor.fetchall()
         result = str(result).replace('[', '').replace(']', '').replace('(', '').replace(')', '').replace("'",
@@ -2140,7 +2135,7 @@ async def getsettings(msg):
 Изменённое приветствие (`greeting`) - {"1" if chatSettings[0][6] != "None" else "0"}
 Капча (`captcha`) - {str(chatSettings[0][7])}
 {"Только создатель может" if chatSettings[0][8] == "creatoronly" else "Все администраторы могут"} изменять параметры (`whocanchangesettings`)
-__**""".replace("1", "✅").replace("0", "❌").replace('adonly', 'Только подозрительные').replace('on', '✅').replace('off',
+__**""".replace("1", "✅").replace("0", "❌").replace('ad_only', 'Только подозрительные').replace('on', '✅').replace('off',
                                                                                                                   '❌')
     await msg.reply(text)
 
