@@ -329,7 +329,7 @@ async def help(msg):
                          "getsettings": "**__Просмотр всех установленных значений__**",
                          "baltop": "**__Получение лидеров чата по балансу__**",
                          "reptop": "**__Получение лидеров чата по репутации__**",
-                         "checkdb": "**__Ручная проверка базы данных. Используйте, если испытываете проблемы с командами /set, /settings и /getsettings__**"
+                         "donation":"**__Информация о возможности пожертвования на разработку бота__**"
                          }
     try:
         await msg.reply(f"Помощь по команде /{pureCommand}:\n\n{availibleCommands[pureCommand]}")
@@ -2241,6 +2241,18 @@ async def roll(msg):
     except:
         return
 
+
+@bot.on(events.NewMessage(pattern="/donation"))
+async def donationRedirect(msg):
+    if not msg.is_private: 
+        logger.info(f"Got a donation info request from {msg.sender.id} in {msg.chat.title}")
+        myReply = await msg.reply("**__Лучше напиши мне эту команду в личных сообщениях, не хотелось бы засорять тут чат информацией о пожертвованиях на мою разработку__**")
+        await asyncio.sleep(7.5)
+        await myReply.delete()
+        return
+    else:
+        logger.info(f"Got a donation info request from {msg.sender.id} in PM")
+        await msg.reply("**__Во первых, хочется поблагодарить за интерес к поддержке разработки бота. Это на самом деле мотивирует. Если ты не просто прописываешь команду ради интереса, а действительно хочешь поддержать разработку рублём, сделать это можно [тут](https://donationalerts.com/r/aethermagee). Ещё раз спасибо.__**", link_preview=False)
 
 
 # Checking if bot was restarted and other stuff (kinda useless now, but I'll let it be...)
