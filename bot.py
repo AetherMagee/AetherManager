@@ -2,7 +2,6 @@
 # Importing a TON of shit
 import asyncio
 from zipfile import ZipFile
-import datetime
 from datetime import timedelta
 import databaseworker as db
 import random
@@ -26,6 +25,8 @@ from telethon.tl.types import *
 import codepicgen
 import schedule
 import threading
+
+
 logger.add("logs/bot_{time}.log")
 
 
@@ -65,7 +66,6 @@ bot = TelegramClient('bot', conf.api_id, conf.api_hash).start(bot_token=conf.TOK
 # Main shitcode starts here
 class TimeoutException(Exception): pass
 
-
 @contextmanager
 def time_limit(seconds):
     def signal_handler(signum, frame):
@@ -100,18 +100,19 @@ def get_timedelta(string):
     try:
         if 'h' in string or 'ч' in string:
             string = string.replace('h', '').replace('ч', '')
-            timedelta = timedelta(hours=int(string))
+            tdelta = timedelta(hours=int(string))
         elif 'm' in string or 'м' in string:
             string = string.replace('м', '').replace('m', '')
-            timedelta = timedelta(minutes=int(string))
+            tdelta = timedelta(minutes=int(string))
         elif 'd' in string or 'д' in string:
             string = string.replace('d', '').replace('д', '')
-            timedelta = timedelta(days=int(string))
+            tdelta = timedelta(days=int(string))
         else:
-            timedelta = 'Error'
-    except:
-        timedelta = 'Error'
-    return timedelta
+            tdelta = 'Error'
+    except Exception as e:
+        logger.error(str(e))
+        tdelta = 'Error'
+    return tdelta
 
 
 @bot.on(events.NewMessage(pattern='/start'))
@@ -592,9 +593,7 @@ async def ping(msg):
 async def mute(msg):
     global requests_per_this_session
     requests_per_this_session += 1
-    msgTextSplit = msg.raw_text.lower().replace('мут ', '').replace('/mute ', '').replace('мут', '').replace('/mute',
-                                                                                                             '').split(
-        ' ')
+    msgTextSplit = msg.raw_text.lower().replace('мут ', '').replace('/mute ', '').replace('мут', '').replace('/mute', '').split(' ')
     # Checking requester permissions
     try:
         requesterPermissions = await bot.get_permissions(msg.chat, msg.sender)
@@ -952,14 +951,12 @@ async def unban(msg):
         pass
 
 
-@bot.on(events.NewMessage(pattern=r'(?i)кик|/kick', func=lambda x: not x.is_private))
+@bot.on(events.NewMessage(pattern=r'(?i)кик|/kick', func=lambda x: not x.is_private and not "kickme" in x.raw_text))
 @logger.catch
 async def kick(msg):
     global requests_per_this_session
     requests_per_this_session += 1
-    msgTextSplit = msg.raw_text.lower().replace('кик ', '').replace('/kick ', '').replace('кик', '').replace('/kick',
-                                                                                                             '').split(
-        ' ')
+    msgTextSplit = msg.raw_text.lower().replace('кик ', '').replace('/kick ', '').replace('кик', '').replace('/kick','').split(' ')
     # Checking requester permissions
     try:
         requesterPermissions = await bot.get_permissions(msg.chat, msg.sender)
@@ -1398,7 +1395,7 @@ async def counter(msg):
         requesterPerms = await bot.get_permissions(msg.chat, msg.sender)
         if not requesterPerms.is_admin:
             try:
-                await bot.edit_permissions(msg.chat, msg.sender, timedelta(days=3), send_messages=False)
+                await bot.edit_permissions(msg.chat, msg.sender, datetime.timedelta(days=3), send_messages=False)
                 await msg.delete()
                 return
             except Exception as e:
@@ -1797,6 +1794,9 @@ async def link_screenshot(event, msg, url, my_msg):
 
 def updateChecker():
     logger.debug("Checking for updates...")
+    if os.name == "nt":
+        logger.warning("Detected Windows, cancelling update check. Be aware that bot can be unstable on this platform!")
+        return
     updateCheck = subprocess.run("git diff", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if not bool(updateCheck.stdout):
         logger.debug("No updates found!")
@@ -2244,11 +2244,11 @@ async def roll(msg):
 
 
 # Checking if bot was restarted and other stuff (kinda useless now, but I'll let it be...)
-logger.info("Running PreInit...")
+logger.info("Starting PreInit...")
 bot.loop.run_until_complete(preinit())
 
 # Starting the bot itself, all the code before is the initiation of functions and handlers
-logger.info("Running Init...")
+logger.info("Starting Init...")
 
 
 
