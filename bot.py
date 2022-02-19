@@ -1620,7 +1620,7 @@ async def cube(msg):
             moneyCurrent = dbEntry[0][4]
             moneyNew = moneyCurrent + num
             db.editUserEntry(msg.sender.id, "money", str(moneyNew))
-    await asyncio.sleep(5)
+    await asyncio.sleep(2.5)
     for message in messages_to_delete:
         try:
             await bot.delete_messages(msg.chat, message)
@@ -1679,7 +1679,7 @@ async def darts(msg):
             moneyCurrent = dbEntry[0][4]
             moneyNew = moneyCurrent + num
             db.editUserEntry(msg.sender.id, "money", str(moneyNew))
-    await asyncio.sleep(5)
+    await asyncio.sleep(2.5)
     for message in messages_to_delete:
         try:
             await bot.delete_messages(msg.chat, message)
@@ -1797,7 +1797,7 @@ def updateChecker():
     if os.name == "nt":
         logger.warning("Detected Windows, cancelling update check. Be aware that bot can be unstable on this platform!")
         return
-    updateCheck = subprocess.run("git diff", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    updateCheck = subprocess.run("git fetch", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     if not bool(updateCheck.stdout):
         logger.debug("No updates found!")
         return
@@ -1990,13 +1990,18 @@ async def recognize_voice(msg):
         my_msg = await msg.reply(text)
         num = str(random.randint(10000, 99999))
         await target.download_media(f'temp/audio{num}.mp3')
-        subprocess.run(f'ffmpeg -hide_banner -loglevel error -i temp/audio{num}.mp3 temp/audio{num}.wav', shell=True,
-                       text=True, stdout=subprocess.PIPE)
+        ffmpegResult = subprocess.run(f'ffmpeg -hide_banner -loglevel error -i temp/audio{num}.mp3 temp/audio{num}.wav', shell=True,
+                       text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if ffmpegResult.stderr:
+            await my_msg.edit("❌ **__Ошибка распознавания__**")
+            await asyncio.sleep(5)
+            await my_msg.delete()
+            return
         audio_file = speech_recognition.AudioFile(f'temp/audio{num}.wav')
         with audio_file as source:
             audio_data = recognizer.record(source)
         try:
-            recognized_google = recognizer.recognize_google(audio_data, language='ru-RU')
+            recognized_google = await recognizer.recognize_google(audio_data, language='ru-RU')
             text += '\n__' + recognized_google + '__\n\n'
             await my_msg.edit(text)
         except speech_recognition.UnknownValueError:
@@ -2097,6 +2102,11 @@ async def fulluser(msg):
     await bot.send_message(myid, f"Normal data:\n{userString}\n\n\nGetFullUserRequest:\n{str(fullUserString)}")
     await msg.reply("Отправлено в лс")
 
+# Debug function
+@bot.on(events.NewMessage(pattern="/fullchat", from_users=myid))
+@logger.catch
+async def fullchat(msg):
+     await msg.reply(msg.chat.stringify())
 
 @bot.on(events.NewMessage(pattern="/bugreport"))
 @logger.catch
@@ -2145,9 +2155,9 @@ __**""".replace("1", "✅").replace("0", "❌").replace('ad_only', 'Только
 async def report(msg):
     reply = await msg.get_reply_message()
     chat_title = "c/" + str(msg.chat.id)
-    if msg.chat.title:
-        chat_title = msg.chat.title
-    text = f"⚠️ **__Новая жалоба в {msg.chat.title}\nОт: {msg.sender.first_name + ' ' + str(msg.sender.last_name)}\nНа: {reply.sender.first_name + ' ' + str(reply.sender.last_name)}\nПричина: {msg.raw_text.replace('/report ', '').replace('/report@aethermgr_bot ', '').replace('/report', 'Не указана').replace('/report@aethermgr_bot', 'Не указана')}\n\n[Перейти к сообщению](https://t.me/{chat_title})__**".replace(
+    if msg.chat.username:
+        chat_title = msg.chat.username
+    text = f"⚠️ **__Новая жалоба в {msg.chat.title}\nОт: {msg.sender.first_name + ' ' + str(msg.sender.last_name)}\nНа: {reply.sender.first_name + ' ' + str(reply.sender.last_name)}\nПричина: {msg.raw_text.replace('/report ', '').replace('/report@aethermgr_bot ', '').replace('/report', 'Не указана').replace('/report@aethermgr_bot', 'Не указана')}\n\n[Перейти к сообщению](https://t.me/{chat_title}/{msg.id})__**".replace(
         " None", "")
     notified = 0
     async for admin in bot.iter_participants(msg.chat, filter=ChannelParticipantsAdmins):
@@ -2282,11 +2292,8 @@ logger.info("Exiting because of Ctrl+C...")
 exit()
 
 # TODO:
-# Reform db                                             <-- DONE!!!!!!!!!!!!!!!!!! FUCKING FINALLY!!!!!!!!!!!!!!
 # Make versioning system                                
-# Make database backup system                           <-- DONE
 # Filters...?                                           <-- Can cause a lot of performance issues
 # More chat cleanup to the god of chat cleanup          <-- Can (probably) damage user experience when too much
 # Optional disable reports
-# Limit /act                                            <-- DONE
 # Simplify cube/darts
