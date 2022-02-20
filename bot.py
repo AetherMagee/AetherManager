@@ -861,7 +861,7 @@ async def ban(msg):
             await bot.edit_permissions(msg.chat, target, timedelta, view_messages=False)
             myReply = await msg.reply("✅ **__Готово, пользователь был забанен__**")
             await asyncio.sleep(5)
-            await myReply.delete()
+            await myReply.delete() 
             return
         else:
             # Same actions, just without timedelta
@@ -1472,7 +1472,7 @@ async def aboutbot(msg):
 
 Credits:
 **Mirivan** - За большое количество подсказок на раннем этапе разработки.
-**zhazhazha** - За пинок заняться этим. Нет, серьёзно, спасибо. Кстати, [его сайтик](http://www.zhazhazha.space/about)
+**zhazhazha** - За пинок заняться этим. Нет, серьёзно, спасибо.
 **𝖀𝕾𝕰𝕽 𝕹𝕬𝕸𝕰** - За моральную поддержку и стресс-тесты бота во время ранней разработки.
 **Avadamiao** - За стресс-тесты бота.
 
@@ -1991,7 +1991,7 @@ async def recognize_voice(msg):
         with audio_file as source:
             audio_data = recognizer.record(source)
         try:
-            recognized_google = await recognizer.recognize_google(audio_data, language='ru-RU')
+            recognized_google = recognizer.recognize_google(audio_data, language='ru-RU')
             text += '\n__' + recognized_google + '__\n\n'
             await my_msg.edit(text)
         except speech_recognition.UnknownValueError:
@@ -2128,11 +2128,11 @@ async def getsettings(msg):
         await getsettings(msg)
     text = f"""⚙️ **__Параметры чата:
 Мут админов (`MuteAdmins`) - {str(chatSettings[0][1])}
-Реагирование на Xiaomi (`ReactOnXiaomi`) - {str(chatSettings[0][2])}
-Реагирование на 'бот' (`ReactOnPing`) - {str(chatSettings[0][3])}
-Разрешены пригласительные ссылки (`AllowInviteLinks`) - {str(chatSettings[0][4])}
-Разрешены TikTok ссылки (`AllowTiktokLinks`) - {str(chatSettings[0][5])}
-Изменённое приветствие (`greeting`) - {"1" if chatSettings[0][6] != "None" else "0"}
+Реакция на MIUI (`ReactOnXiaomi`) - {str(chatSettings[0][2])}
+Реакция на 'бот' (`ReactOnPing`) - {str(chatSettings[0][3])}
+Пригласительные ссылки (`AllowInviteLinks`) - {str(chatSettings[0][4])}
+TikTok ссылки (`AllowTiktokLinks`) - {str(chatSettings[0][5])}
+Своё приветствие (`greeting`) - {"1" if chatSettings[0][6] != "None" else "0"}
 Капча (`captcha`) - {str(chatSettings[0][7])}
 {"Только создатель может" if chatSettings[0][8] == "creatoronly" else "Все администраторы могут"} изменять параметры (`whocanchangesettings`)
 Разрешён HowYourBot (`HowYourBot`) - {str(chatSettings[0][9])}
@@ -2286,5 +2286,4 @@ exit()
 # TODO:
 # Filters...?                                           <-- Can cause a lot of performance issues
 # More chat cleanup to the god of chat cleanup          <-- Can (probably) damage user experience when too much
-# Optional disable reports
 # Simplify cube/darts
