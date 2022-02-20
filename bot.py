@@ -2136,7 +2136,7 @@ async def getsettings(msg):
 Капча (`captcha`) - {str(chatSettings[0][7])}
 {"Только создатель может" if chatSettings[0][8] == "creatoronly" else "Все администраторы могут"} изменять параметры (`whocanchangesettings`)
 Разрешён HowYourBot (`HowYourBot`) - {str(chatSettings[0][9])}
-__**""".replace("1", "✅").replace("0", "❌").replace('ad_only', '**Только подозрительные**').replace('on', '✅').replace('off', '❌')
+__**""".replace("1", "✅").replace("0", "❌").replace('ad_only', '🔎').replace('on', '✅').replace('off', '❌')
     myReply = await msg.reply(text)
     await asyncio.sleep(10)
     await myReply.delete()
