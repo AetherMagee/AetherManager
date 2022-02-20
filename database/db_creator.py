@@ -39,6 +39,7 @@ chdbcursor.execute("""CREATE TABLE chats (
 "custom_hello" TEXT NOT NULL DEFAULT 'None', 
 "captcha" TEXT NOT NULL DEFAULT 'ad_only',
 "who_can_change_settings" TEXT NOT NULL DEFAULT 'CreatorOnly',
+"howyourbot" BOOLEAN NOT NULL DEFAULT 1,
 PRIMARY KEY (chid)
 )""")
 

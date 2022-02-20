@@ -18,8 +18,6 @@ import speech_recognition
 import telethon.errors
 from loguru import logger
 from telethon import *
-from telethon import Button
-from telethon.tl import types
 from telethon.tl.functions.users import GetFullUserRequest
 from telethon.tl.types import *
 import codepicgen
@@ -375,7 +373,7 @@ async def captcha(event):
     code_notify = await event.reply(
         "⚠️ **__Приветствую! Вам необходимо пройти дополнительную проверку. Ответьте на это сообщение кодом с картинки в течении следующих 10 секунд.__**",
         file=f"temp/code_{code}.jpg")
-    subprocess.run(f"del temp\\code_{code}.jpg || rm -f temp/code_{code}.jpg", shell=True)
+    subprocess.run(f"del temp\\code_{code}.jpg || rm -f temp/code_{code}.jpg", shell=True, stderr=subprocess.PIPE)
     try:
         async with bot.conversation(event.chat, timeout=10) as conv:
             reply = await conv.get_reply(code_notify)
@@ -459,7 +457,7 @@ async def hello(event):
                                     f"🔔 **__Сервисное уведомление из {event.chat.title}\nВо время работы капчи произошла ошибка. Пожалуйста, проверьте разрешения бота в чате. Если вы считаете, что проблема не в них, используйте /bugreport в указанном выше чате__**")
                 return
 
-        if chatInfoFromDB[0][1] == "adonly":
+        if chatInfoFromDB[0][1] == "ad_only":
             adBot = False
             fullUserEntity = await bot(GetFullUserRequest(event.user))
             forbiddenWordsInDescription = ["t.me", "joinchat", "🍓"]
@@ -1109,7 +1107,7 @@ async def db_erase_handler(msg):
 
 @bot.on(events.NewMessage(func=lambda x: not x.is_private))
 @logger.catch
-async def muteAdminsWorker(msg):
+async def muteAdminsWorkerAndBadMsgEraser(msg):
     try:
         targetPerms = await bot.get_permissions(msg.chat, msg.sender)
     except:
@@ -1133,7 +1131,7 @@ async def muteAdminsWorker(msg):
                 funcOut = db.addChatEntry(msg.chat_id)
                 if funcOut == "Success":
                     logger.success("Fixed successfully!")
-                    await muteAdminsWorker(msg)
+                    await muteAdminsWorkerAndBadMsgEraser(msg)
                     return
                 else:
                     logger.error("Failure while fixing!")
@@ -1144,6 +1142,14 @@ async def muteAdminsWorker(msg):
                 except:
                     logger.warning(
                         f"Error while deleting mutedAdmin's message: {msg.sender.id} in {msg.chat_id}, msgid: {msg.id}")
+    
+    if msg.via_bot_id == 1341194997:
+        if not bool(db.getSettingsForChat(msg.chat_id, "howyourbot")[0][0]):
+            try:
+                await msg.delete()
+            except:
+                logger.error(f"Failure while deleting message via HowYourBot in {msg.chat_id} ({msg.id})")
+        
 
 
 
@@ -1186,7 +1192,6 @@ async def setCommand(msg):
             await setCommand(msg)
         else:
             return
-    print("Is creator: " + str(requesterPermissions.is_creator))
     if checkIfCreatorOnly[0][0] == "creatoronly" or checkIfCreatorOnly[0][0] == "CreatorOnly":
         if not requesterPermissions.is_creator:
             myReply = await msg.reply("❌ **__Только создатель чата может изменять параметры__**")
@@ -1208,7 +1213,8 @@ async def setCommand(msg):
         "allowtiktoklinks": "BOOL_allow_tiktok_links",
         "greeting": "SPECIFIC_custom_hello",
         "whocanchangesettings": "STRING_who_can_change_settings",
-        "captcha": "STRING_captcha"
+        "captcha": "STRING_captcha",
+        "howyourbot": "BOOL_howyourbot"
     }
     textSplit = msg.raw_text.replace("/set ", "").replace("/set@aethermgr_bot ", "").replace("_", "").replace("-",
                                                                                                               "").lower().split(
@@ -1792,32 +1798,16 @@ async def link_screenshot(event, msg, url, my_msg):
         except TimeoutException:
             await msg.reply('❌ **__Процесс занял слишком много времени и был прерван.__**')
 
-def updateChecker():
-    logger.debug("Checking for updates...")
-    if os.name == "nt":
-        logger.warning("Detected Windows, cancelling update check. Be aware that bot can be unstable on this platform!")
-        return
-    updateCheck = subprocess.run("git fetch", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if not bool(updateCheck.stdout):
-        logger.debug("No updates found!")
-        return
-    logger.debug("Found updates, installing...")
-    global updateOngoing
-    updateOngoing = True
-    updateProcess = subprocess.run("git pull", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    if not updateProcess.stderr:
-        subprocess.Popen("./etc/restarter.sh", shell=True)
-        return
-    logger.critical("Error while updating!")
 
 
 @logger.catch
 async def preinit():
-    updateChecker()
     schedule.every(30).minutes.do(backupDatabase)
     backgroundScheduleThread = threading.Thread(target=scheduleThreader, daemon=True)
     backgroundScheduleThread.start()
-    logger.debug("Scheduled database backup for 30 mins")
+    logger.debug("Scheduled database backup for every 30 mins")
+    if os.name == "nt":
+        logger.warning("\n================================\nDETECTED WINDOWS\nBe aware that bot is VERY\nunstable on this platform.\nYou should consider using\nWSL or VM\n================================")
     logger.info('PreInit success!')
 
 
@@ -2076,7 +2066,7 @@ async def baltop(msg):
 
 @bot.on(events.NewMessage(pattern='/reptop'))
 @logger.catch
-async def baltop(msg):
+async def reptop(msg):
     db.usersCursor.execute("SELECT * FROM users ORDER BY reputation DESC")
     data = db.usersCursor.fetchmany(10)
     text = "**__Глобальный топ по репутации:\n"
@@ -2106,7 +2096,7 @@ async def fulluser(msg):
 @bot.on(events.NewMessage(pattern="/fullchat", from_users=myid))
 @logger.catch
 async def fullchat(msg):
-     await msg.reply(msg.chat.stringify())
+    await msg.reply(msg.chat.stringify())
 
 @bot.on(events.NewMessage(pattern="/bugreport"))
 @logger.catch
@@ -2145,6 +2135,7 @@ async def getsettings(msg):
 Изменённое приветствие (`greeting`) - {"1" if chatSettings[0][6] != "None" else "0"}
 Капча (`captcha`) - {str(chatSettings[0][7])}
 {"Только создатель может" if chatSettings[0][8] == "creatoronly" else "Все администраторы могут"} изменять параметры (`whocanchangesettings`)
+Разрешён HowYourBot (`HowYourBot`) - {str(chatSettings[0][9])}
 __**""".replace("1", "✅").replace("0", "❌").replace('ad_only', 'Только подозрительные').replace('on', '✅').replace('off',
                                                                                                                   '❌')
     await msg.reply(text)
@@ -2292,8 +2283,8 @@ logger.info("Exiting because of Ctrl+C...")
 exit()
 
 # TODO:
-# Make versioning system                                
 # Filters...?                                           <-- Can cause a lot of performance issues
 # More chat cleanup to the god of chat cleanup          <-- Can (probably) damage user experience when too much
 # Optional disable reports
 # Simplify cube/darts
+# Ability to disable HowYourBot's messages
