@@ -2283,7 +2283,7 @@ async def donationRedirect(msg):
         return
     else:
         logger.info(f"Got a donation info request from {msg.sender.id} in PM")
-        await msg.reply("**__Во первых, хочется поблагодарить за интерес к поддержке разработки бота. Это на самом деле мотивирует. Если ты не просто прописываешь команду ради интереса, а действительно хочешь поддержать разработку рублём, сделать это можно [тут](https://donationalerts.com/r/aethermagee). Ещё раз спасибо.__**", link_preview=False)
+        await msg.reply("**__Во первых, хочется поблагодарить за интерес к поддержке разработки бота. Это на самом деле мотивирует. Если ты не просто прописываешь команду ради интереса, а действительно хочешь поддержать разработку рублём, сделать это можно по ссылкам ниже:\n\n[DonationAlerts](https://donationalerts.com/r/aethermagee)\n[QIWI](https://qiwi.ru/n/ADDEA17)\n\nЕщё раз спасибо.__**", link_preview=False)
 
 
 
