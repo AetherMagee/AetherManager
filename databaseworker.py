@@ -38,7 +38,7 @@ def getUserEntry(searchRequest, searchMethod = "all", objectToReturn = "all"):
         if searchMethod.lower() in availableSearchMethods:
             searchMethodsToUse += searchMethod.lower()
         else:
-            raise InvalidSearchMethod("The search method that you specified is invalid. Availible methods: " + str(availableSearchMethods))
+            raise "The search method that you specified is invalid. Availible methods: " + str(availableSearchMethods)
     else:
         searchMethodsToUse = availableSearchMethods
     
@@ -99,7 +99,7 @@ def addAltName(userID, altName):
     # Cleaning the altname to avoid errors and SQL-injections. 
     altName = altName.lower()
     altName = deleteNonASCII(altName)
-    forbiddenCharsAndWords = ["\"", "'", "select", "drop", ";", "]", "[", "{", "}", "|", "(", ")"]
+    forbiddenCharsAndWords = ["\"", "'", "select", "drop", ";", "]", "[", "{", "}", "|", "(", ")", "delete"]
     for item in forbiddenCharsAndWords:
         altName = altName.replace(item, "").replace(" ", "_")
     
@@ -137,7 +137,7 @@ def deleteAltName(userID, altName):
     # Cleaning the altname to avoid errors and SQL-injections. 
     altName = altName.lower()
     altName = deleteNonASCII(altName)
-    forbiddenCharsAndWords = ["\"", "'", "select", "drop", ";", "]", "[", "{", "}", "|", "(", ")"]
+    forbiddenCharsAndWords = ["\"", "'", "select", "drop", ";", "]", "[", "{", "}", "|", "(", ")", "delete"]
     for item in forbiddenCharsAndWords:
         altName = altName.replace(item, "").replace(" ", "_")
     
@@ -175,7 +175,7 @@ def searchUserByAltName(altName):
     # Cleaning the altname to avoid errors and SQL-injections. 
     altName = altName.lower()
     altName = deleteNonASCII(altName)
-    forbiddenCharsAndWords = ["\"", "'", "select", "drop", ";", "]", "[", "{", "}", "|", "(", ")"]
+    forbiddenCharsAndWords = ["\"", "'", "select", "drop", ";", "]", "[", "{", "}", "|", "(", ")", "delete"]
     for item in forbiddenCharsAndWords:
         altName = altName.replace(item, "").replace(" ", "_")
 

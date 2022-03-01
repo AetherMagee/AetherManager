@@ -82,35 +82,57 @@ def time_limit(seconds):
     finally:
         signal.alarm(0)
 
-
-def get_timedelta(string):
-    if type(string) is not list:
-        try:
-            string = string.split(' ')
-            string = string[0]
-        except:
-            return 'Error'
-    else:
-        try:
-            string = string[0]
-        except:
-            return 'Error'
+def get_timedelta(inputString):
     try:
-        if 'h' in string or 'ч' in string:
-            string = string.replace('h', '').replace('ч', '')
-            tdelta = timedelta(hours=int(string))
-        elif 'm' in string or 'м' in string:
-            string = string.replace('м', '').replace('m', '')
-            tdelta = timedelta(minutes=int(string))
-        elif 'd' in string or 'д' in string:
-            string = string.replace('d', '').replace('д', '')
-            tdelta = timedelta(days=int(string))
+        if len(inputString) == 1:
+            if "ч" in inputString[0] or "h" in inputString[0]:
+                return timedelta(hours=int(re.sub("[^0-9]", "", inputString[0])))
+            if "д" in inputString[0] or "d" in inputString[0]:
+                return timedelta(days=int(re.sub("[^0-9]", "", inputString[0])))
+            if "м" in inputString[0] or "m" in inputString[0]:
+                return timedelta(minutes=int(re.sub("[^0-9]", "", inputString[0])))
+            return "Error"
+        elif len(inputString) >= 2:
+            if "ч" in inputString[1] or "h" in inputString[1]:
+                return timedelta(hours=int(inputString[0]))
+            if "д" in inputString[1] or "d" in inputString[1]:
+                return timedelta(days=int(inputString[0]))
+            if "м" in inputString[1] or "m" in inputString[1]:
+                return timedelta(minutes=int(inputString[0]))
+            return "Error"
         else:
-            tdelta = 'Error'
-    except Exception as e:
-        logger.error(str(e))
-        tdelta = 'Error'
-    return tdelta
+            return "Error"
+    except:
+        return "Error"
+
+# def get_timedelta(string):
+#     if type(string) is not list:
+#         try:
+#             string = string.split(' ')
+#             string = string[0]
+#         except:
+#             return 'Error'
+#     else:
+#         try:
+#             string = string[0]
+#         except:
+#             return 'Error'
+#     try:
+#         if 'h' in string or 'ч' in string:
+#             string = string.replace('h', '').replace('ч', '')
+#             tdelta = timedelta(hours=int(string))
+#         elif 'm' in string or 'м' in string:
+#             string = string.replace('м', '').replace('m', '')
+#             tdelta = timedelta(minutes=int(string))
+#         elif 'd' in string or 'д' in string:
+#             string = string.replace('d', '').replace('д', '')
+#             tdelta = timedelta(days=int(string))
+#         else:
+#             tdelta = 'Error'
+#     except Exception as e:
+#         logger.error(str(e))
+#         tdelta = 'Error'
+#     return tdelta
 
 
 @bot.on(events.NewMessage(pattern='/start'))
@@ -154,7 +176,10 @@ async def info_get(msg):
             if not type(target) == telethon.tl.types.Channel:
                 foundTarget = True
             else:
-                raise "channel"
+                myReply = await msg.reply("❌ **__Анализ каналов пока что не поддерживается__**")
+                await asyncio.sleep(5)
+                await myReply.delete()
+                return
         except:
             targetID = db.searchUserByAltName(cleanSearchRequest)
             if targetID != "NotFound":
@@ -171,6 +196,11 @@ async def info_get(msg):
     else:
         rep = str(userDataFromDB[0][3])
         coins = str(userDataFromDB[0][4])
+    if target == telethon.tl.types.Channel:
+        myReply = await msg.reply("❌ **__Анализ каналов пока что не поддерживается__**")
+        await asyncio.sleep(5)
+        await myReply.delete()
+        return
     altNamesRaw = db.getAltNames(target.id)
     if not bool(altNamesRaw):
         altNames = "Отсутствуют"
@@ -352,7 +382,7 @@ async def restart(msg):
 @logger.catch
 async def check_for_ad(event):
     user = await bot(GetFullUserRequest(event.user))
-    forbidden = ["🍓", "Wewbsz6IMYxmMmMy", "joinchat"]
+    forbidden = ["🍓", "Wewbsz6IMYxmMmMy", "joinchat", "t.me", "@"]
     for word in forbidden:
         if word in user.about:
             return True
@@ -418,6 +448,7 @@ async def say_hello(event, custom_hello):
         await event.reply(greeting)
     else:
         await event.reply("Привет!")
+    db.addUserEntry(event.user.id, event.user.username, event.user.phone)
 
 
 @logger.catch
@@ -505,6 +536,13 @@ async def hello(event):
                                     f"🔔 **__Сервисное уведомление из {event.chat.title}\nСожалею, что надоедаю уведомлениями с самого момента добавления, но во время добавления вашего чата в базу данных произошла ошибка. Пожалуйста, используйте /bugreport в чате, указанном выше")
                 return
             await parseAllUsers(event.chat)
+        else:
+            db.editChatEntry(event.chat_id, "isparticipant", "1")
+    if event.user_kicked and user.id == botid:
+        logger.info("Detected my deletion from chat " + event.chat.title)
+        logger.info("Marking myself as not participant...")
+        out = db.editChatEntry(event.chat_id, "isparticipant", "0")
+        logger.info(out)
 
 
 # @bot.on(events.ChatAction)
@@ -1310,17 +1348,8 @@ async def setCommand(msg):
     pattern=r'(?i).*miui*|.*миуи*|.*миюай*|.*memeui*|.*xiaomi*|.*ximi*|.*кси*оми*|.*ксяоми*'))
 @logger.catch
 async def memeui(msg):
-    try:
-        get_command = """SELECT react_on_xiaomi FROM chats WHERE chid = {cid}""".format(cid=str(msg.chat_id))
-        db.chatsCursor.execute(get_command)
-        result = db.chatsCursor.fetchall()
-        result = str(result).replace('[', '').replace(']', '').replace('(', '').replace(')', '').replace("'",
-                                                                                                         '').replace(
-            ",", "")
-    except:
-        logger.exception('Error on xiaomi')
-        return
-    if result == '1':
+    checkResult = db.getSettingsForChat(msg.chat_id, "react_on_xiaomi")
+    if checkResult == '1':
         global requests_per_this_session
         requests_per_this_session += 1
         choise = random.randint(-1, 5)
@@ -1945,7 +1974,7 @@ async def noteList(msg):
     notesList = db.otherCursor.fetchall()
     text = "📔 **__Заметки в этом чате:__**\n"
     for note in notesList:
-        text += f"`#{note[0]}`"
+        text += f"`#{note[0]}`\n"
     myReply = await msg.reply(text)
 
 
@@ -2257,16 +2286,20 @@ async def donationRedirect(msg):
         await msg.reply("**__Во первых, хочется поблагодарить за интерес к поддержке разработки бота. Это на самом деле мотивирует. Если ты не просто прописываешь команду ради интереса, а действительно хочешь поддержать разработку рублём, сделать это можно [тут](https://donationalerts.com/r/aethermagee). Ещё раз спасибо.__**", link_preview=False)
 
 
+
+
+
+
+
+
+
+# Starting
 # Checking if bot was restarted and other stuff (kinda useless now, but I'll let it be...)
 logger.info("Starting PreInit...")
 bot.loop.run_until_complete(preinit())
 
 # Starting the bot itself, all the code before is the initiation of functions and handlers
 logger.info("Starting Init...")
-
-
-
-
 @logger.catch
 def init():
     logger.success("Started!")
@@ -2278,8 +2311,8 @@ if __name__ == "__main__":
 else:
     logger.exception("AetherManager's main file can't be used as a module!")
     exit()
-#
-# Closing cursor at the end of the job
+
+# Exiting
 logger.info("Exiting because of Ctrl+C...")
 exit()
 
