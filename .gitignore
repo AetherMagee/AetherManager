@@ -2,6 +2,7 @@ testbot.py
 .idea
 temp/*
 backups/*
+parse*
 userbot.py
 *.session
 settings.json
@@ -10,6 +11,7 @@ settings.json
 *.log
 confidential.py
 run.py
+traceback*
 
 
 # Byte-compiled / optimized / DLL files

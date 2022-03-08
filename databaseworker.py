@@ -247,6 +247,7 @@ def addChatEntry(chatID):
     return "Success"
 
 
+
 def editChatEntry(chatID, whatToEdit, editToWhat, mode = "bool"):
     if mode == "string":
         editToWhat = f"\"{editToWhat}\""
@@ -255,6 +256,81 @@ def editChatEntry(chatID, whatToEdit, editToWhat, mode = "bool"):
         chatsDB.commit()
     except: return "Error"
     return "Success"
+
+
+
+
+def getFilters(chatID = None):
+    if chatID: 
+        try: 
+            chatsCursor.execute(f"SELECT filters FROM chats WHERE chid = {chatID}")
+            result = chatsCursor.fetchall()
+        except: return "Error"
+        return result
+    else:
+        chatsCursor.execute("SELECT chid, filters FROM chats")
+        filtersDictionaryReadyToSend = {}
+        for entry in chatsCursor.fetchall():
+            if not entry[1]:
+                filters = None
+            else:
+                filters = eval(entry[1])
+            filtersDictionaryReadyToSend.update({entry[0]: filters})
+        return filtersDictionaryReadyToSend
+
+
+
+
+def addFilter(chatID, filterTrigger, filterReply): 
+    try: 
+        chatsCursor.execute(f"SELECT filters FROM chats WHERE chid = {chatID}")
+        result = chatsCursor.fetchall()
+    except: 
+        addChatEntry(chatID)
+        addFilter(chatID, filterTrigger, filterReply)
+    
+    filter = {
+            "trigger": filterTrigger,
+            "reply": filterReply
+    }
+    
+    if not result[0][0]:
+        chatsCursor.execute(f"UPDATE chats SET filters = \"[{str(filter)}]\" WHERE chid = {chatID}")
+        chatsDB.commit()
+    else:
+        oldfilters = eval(result[0][0])
+        if {"trigger": filterTrigger, "reply": filterReply} in oldfilters:
+            return "FilterAlreadyExists"
+        filters = oldfilters
+        filters.append(filter)
+        chatsCursor.execute(f"UPDATE chats SET filters = \"{str(filters)}\" WHERE chid = {chatID}")
+        chatsDB.commit()
+        return "Success"
+
+
+
+def removeFilter(chatID, filterTrigger):
+    try: 
+        chatsCursor.execute(f"SELECT filters FROM chats WHERE chid = {chatID}")
+        result = chatsCursor.fetchall()
+    except: 
+        addChatEntry(chatID)
+        removeFilter(chatID, filterTrigger)
+    
+    if not result[0][0]:
+        print("Nothing to return, got this from DB: " + str(result[0][0]))
+        return "NothingToDelete"
+    filters = eval(result[0][0])
+    for filter in filters: 
+        if filter["trigger"] == filterTrigger:
+            filters.remove(filter)
+            chatsCursor.execute(f"UPDATE chats SET filters = \"{str(filters)}\" WHERE chid = {chatID}")
+            chatsDB.commit()
+            return "Success"
+    return "FilterNotFound"
+
+
+
 
 def init():
     global usersDB, chatsDB, altnamesDB, mutedadminsDB, otherDB, usersCursor, chatsCursor, altnamesCursor, mutedadminsCursor, otherCursor

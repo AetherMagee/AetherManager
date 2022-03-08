@@ -7,3 +7,4 @@ loguru
 emoji
 pillow
 schedule
+aioschedule

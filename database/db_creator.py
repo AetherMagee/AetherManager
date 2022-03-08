@@ -40,6 +40,9 @@ chdbcursor.execute("""CREATE TABLE chats (
 "captcha" TEXT NOT NULL DEFAULT 'ad_only',
 "who_can_change_settings" TEXT NOT NULL DEFAULT 'CreatorOnly',
 "howyourbot" BOOLEAN NOT NULL DEFAULT 1,
+"filters" TEXT DEFAULT NULL,
+"filters_active" BOOLEAN NOT NULL DEFAULT 1,
+"isparticipant" BOOLEAN NOT NULL DEFAULT 1,
 PRIMARY KEY (chid)
 )""")
 
@@ -62,6 +65,14 @@ otherDBcursor.execute("""CREATE TABLE "notes" (
 "note_author_id"	INTEGER NOT NULL,
 "note_name"	TEXT NOT NULL UNIQUE
 )""")
+otherDBcursor.execute("""CREATE TABLE "peopleCount" (
+"chid" INTEGER NOT NULL,
+"count" INTEGER NOT NULL,
+"datetime" TEXT NOT NULL,
+PRIMARY KEY("datetime")
+)""")
+
+
 
 madb = sqlite3.connect("mutedadmins.db")
 madb.cursor().execute("""CREATE TABLE "muted_admins" (

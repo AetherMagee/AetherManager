@@ -1,22 +1,33 @@
 # -*- coding: utf-8 -*-
+
+if __name__ == "__main__":
+    pass # Go ahead
+else:
+    print("You cannot use AetherManager's main file as a library.")
+    exit()
+
+
 # Importing a TON of shit
+# I KNOW that this looks and performs awful but FUCK OFF IM TOO LAZY TO GET RID OF THIS SHIT
+print("Importing libraries, please wait...")
 import asyncio
 from zipfile import ZipFile
 from datetime import timedelta
 import databaseworker as db
-import random
 import re
 import signal
 import subprocess
 import time
+import aioschedule
 from contextlib import contextmanager
 import emoji
 import psutil
+from loguru import logger
+from random import randint
 import requests
 import json
 import speech_recognition
 import telethon.errors
-from loguru import logger
 from telethon import *
 from telethon.tl.functions.users import GetFullUserRequest
 from telethon.tl.types import *
@@ -25,8 +36,8 @@ import schedule
 import threading
 
 
-logger.add("logs/bot_{time}.log")
-
+logger.add("logs/{time}.log")
+print("Finished importing, initializing functions...")
 
 try:
     import confidential as conf  # That's my file with data like bot token, etc...
@@ -45,7 +56,6 @@ botid = int(conf.TOKEN.split(":")[0])
 already_changed_rep = []
 already_acted = []
 updateOngoing = False
-
 filtersDictionary = {}  # <--- WIP
 # Planned format: 
 # {
@@ -55,6 +65,9 @@ filtersDictionary = {}  # <--- WIP
 # Filters will also be stored in DB, but only for shutdown resistance
 # DB will be called only in case of restart or filters edit
 # Calling DB on every message is going to be extremly slow, so I decided to make something like this
+# EDIT-1: Just realised that this is going to be another updater-like background thread, just like scheduleThreader(), fuuuuuuuck
+# EDIT-2: By the way its already WIP as you can see at the end of the file, its just hard af for my tiny brain and time limits
+# EDIT-3: Im idiot lmao, i've written about when the DB is going to be called literally 2 lines above and here im complaining about things i wont do anyways...
 
 
 # Initialising bot
@@ -82,6 +95,7 @@ def time_limit(seconds):
     finally:
         signal.alarm(0)
 
+
 def get_timedelta(inputString):
     try:
         if len(inputString) == 1:
@@ -104,35 +118,6 @@ def get_timedelta(inputString):
             return "Error"
     except:
         return "Error"
-
-# def get_timedelta(string):
-#     if type(string) is not list:
-#         try:
-#             string = string.split(' ')
-#             string = string[0]
-#         except:
-#             return 'Error'
-#     else:
-#         try:
-#             string = string[0]
-#         except:
-#             return 'Error'
-#     try:
-#         if 'h' in string or 'ч' in string:
-#             string = string.replace('h', '').replace('ч', '')
-#             tdelta = timedelta(hours=int(string))
-#         elif 'm' in string or 'м' in string:
-#             string = string.replace('м', '').replace('m', '')
-#             tdelta = timedelta(minutes=int(string))
-#         elif 'd' in string or 'д' in string:
-#             string = string.replace('d', '').replace('д', '')
-#             tdelta = timedelta(days=int(string))
-#         else:
-#             tdelta = 'Error'
-#     except Exception as e:
-#         logger.error(str(e))
-#         tdelta = 'Error'
-#     return tdelta
 
 
 @bot.on(events.NewMessage(pattern='/start'))
@@ -213,7 +198,7 @@ async def info_get(msg):
                 splitter = ""
             altNames += splitter + str(name)
     if target.username:
-        username = f"[{target.username}](tg://openmessage?user_id={target.id})"
+        username = f"[{target.username}](tg://user?id={target.id})"
     else:
         username = "Отсутствует"
     spyglass = await msg.reply("🔎")
@@ -345,7 +330,7 @@ async def help(msg):
                          "forget": "**__Удаляет альтернативное имя пользователя. \n\nИспользование: По аналогии с /remember__**",
                          "anon": "**__Выводит помощь по механике анонимных сообщений__**",
                          "administration": "**__Базовые команды для администрирования чата: mute, ban, другие.\n\nИспользование: Так же, как и в других ботах__**",
-                         "report": "**__Отправка жалобы на пользователя администратором путём рассылки уведомления в личные сообщения администраторов (требует от администраторов запущенного диалога с ботом)\n\nИспользование: /report ПРИЧИНА - ответом на сообщение пользователя__**",
+                         "report": "**__Отправка жалобы на пользователя администратором путём рассылки уведомления в личные сообщения администраторов (требует от администраторов запущенного диалога с ботом\n\nИспользование: /report ПРИЧИНА - ответом на сообщение пользователя__**",
                          "cube": "**__Сыграть с ботом в кубик\n\nАльтернативная команда: /dice__**",
                          "darts": "**__Сыграть с ботом в дартс__**",
                          "save": "**__Сохранение заметки\n\nИспользование: /save имя.заметки - в ответ на сообщение__**",
@@ -357,7 +342,9 @@ async def help(msg):
                          "getsettings": "**__Просмотр всех установленных значений__**",
                          "baltop": "**__Получение лидеров чата по балансу__**",
                          "reptop": "**__Получение лидеров чата по репутации__**",
-                         "donation":"**__Информация о возможности пожертвования на разработку бота__**"
+                         "donation": "**__Информация о возможности пожертвования на разработку бота__**",
+                         "userscleanup": "**__Сканирует чат и кикает удалённые аккаунты__**",
+                         "filter": "**__Команда для управления системой фильтров. Используйте `/filter help` для подробностей__**"
                          }
     try:
         await msg.reply(f"Помощь по команде /{pureCommand}:\n\n{availibleCommands[pureCommand]}")
@@ -370,13 +357,6 @@ async def help(msg):
         await msg.reply("**__Произошла ошибка__**")
         raise m
 
-
-@bot.on(events.NewMessage(pattern='рестарт|/restart', from_users=myid))
-@logger.catch
-async def restart(msg):
-    my = await bot.send_message(msg.chat_id, '🕗 **__Окей, перезагружаюсь...__**', reply_to=msg)
-    os.system('echo {},{} >> after-restart'.format(str(msg.chat_id), str(my.id)))
-    os.system('pkill python3')
 
 
 @logger.catch
@@ -398,7 +378,7 @@ async def check_for_ad(event):
 
 @logger.catch
 async def captcha(event):
-    code = str(random.randint(1000, 9999))
+    code = str(randint(1000, 9999))
     codepicgen.generate(code)
     code_notify = await event.reply(
         "⚠️ **__Приветствую! Вам необходимо пройти дополнительную проверку. Ответьте на это сообщение кодом с картинки в течении следующих 10 секунд.__**",
@@ -518,6 +498,8 @@ async def hello(event):
                     await notify_admins(event.chat,
                                         f"🔔 **__Сервисное уведомление из {event.chat.title}\nВо время работы капчи произошла ошибка. Пожалуйста, проверьте разрешения бота в чате. Если вы считаете, что проблема не в них, используйте /bugreport в указанном выше чате__**")
                     return
+            else:
+                await say_hello(event, chatInfoFromDB[0][0])
 
         if chatInfoFromDB[0][1] == "off":
             await say_hello(event, chatInfoFromDB[0][0])
@@ -535,7 +517,8 @@ async def hello(event):
                 await notify_admins(event.chat,
                                     f"🔔 **__Сервисное уведомление из {event.chat.title}\nСожалею, что надоедаю уведомлениями с самого момента добавления, но во время добавления вашего чата в базу данных произошла ошибка. Пожалуйста, используйте /bugreport в чате, указанном выше")
                 return
-            await parseAllUsers(event.chat)
+            await parseAllUsers(event)
+            updateFiltersList()
         else:
             db.editChatEntry(event.chat_id, "isparticipant", "1")
     if event.user_kicked and user.id == botid:
@@ -596,10 +579,10 @@ async def hello(event):
 #             else:
 #                 logger.info('Настройки чата уже есть в базе.')
 #             async with bot.action(event.chat, "typing"):
-#                 await asyncio.sleep(random.randint(1,3))
+#                 await asyncio.sleep(randint(1,3))
 #             await event.reply("👋")
 #             async with bot.action(event.chat, "typing"):
-#                 await asyncio.sleep(random.randint(1,3))
+#                 await asyncio.sleep(randint(1,3))
 #             await event.reply(
 #                 '**__Здрасьте :P\nЯ - бот, призванный упростить администрирование групп\nБольше обо мне можно узнать с помощью /helpme и /aboutbot__**')
 #             await parseall(event)
@@ -620,7 +603,7 @@ async def ping(msg):
                 logger.info('Got a ping from ' + msg.sender.first_name)
                 answer_list = ['что?', "✅ Онлайн", 'чё?', '?', "✅ Онлайн", 'слава украине', "✅ Онлайн",
                                "чё надо", 'м', 'онлине', "ацтань, я дед инсайд", "👋"]
-                select = random.randint(0, len(answer_list) - 1)
+                select = randint(0, len(answer_list) - 1)
                 await msg.reply(answer_list[select])
 
 
@@ -757,6 +740,7 @@ async def unmute(msg):
         target = targetMsg.sender
         found = True
     if not found:
+# I fucking see it
         # Trying to get target by get_entity()
         try:
             target = await bot.get_entity(msgTextSplit[0].replace("@", ""))
@@ -1208,7 +1192,7 @@ async def settings_helper(msg):
         pass
     else:
         await msg.reply(
-            '__Доступные настройки:__\n\n**MuteAdmins** - __разрешает всем администраторам мутить друг друга путём авто удаления сообщений. По умолчанию отключено.__\n\n**ReactOnXiaomi** - __Отправляет бассбустед голосовое при упоминании сей компании или MIUI. По умолчанию включено.__\n\n**ReactOnPing** - __Реакция на сообщение **бот**, что является заменой /ping. Используется для проверки работоспособности бота. По умолчанию включено.__\n\n**AllowTiktokLinks** - __Разрешать ли ссылки, ведущие на TikTok. По умолчанию включено (не удалять)__\n\n**Greeting** - Позволяет установить собственное приветствие. Не требует значений True/False.\n\n**Captcha** - __Заставлять ли пользователей проходить капчу на входе. Принимаемые значения: \"on\"(Заставлять всех), \"ad_only\"(Заставлять только похожих на ботов) и \"off\"(Не заставлять)__\n\n**WhoCanChangeSettings** - __Параметр позволяет устанавливать, кто может редактировать настройки. Допустимые значения - \"CreatorOnly\" - только создатель, и \"AllAdmins\" - все администраторы с правом изменения профиля группы__\n\n\nИспользуйте /set [НазваниеПараметра] [Значение(True\\False)] для изменения параметров')
+            '__Доступные настройки:__\n\n**MuteAdmins** - __разрешает всем администраторам мутить друг друга путём авто удаления сообщений. По умолчанию отключено.__\n\n**ReactOnXiaomi** - __Отправляет бассбустед голосовое при упоминании сей компании или MIUI. По умолчанию включено.__\n\n**ReactOnPing** - __Реакция на сообщение **бот**, что является заменой /ping. Используется для проверки работоспособности бота. По умолчанию включено.__\n\n**AllowTiktokLinks** - __Разрешать ли ссылки, ведущие на TikTok. По умолчанию включено (не удалять)__\n\n**Greeting** - Позволяет установить собственное приветствие. Не требует значений True/False.\n\n**Captcha** - __Заставлять ли пользователей проходить капчу на входе. Принимаемые значения: \"on\"(Заставлять всех), \"ad_only\"(Заставлять только похожих на ботов) и \"off\"(Не заставлять)__\n\n**WhoCanChangeSettings** - __Параметр позволяет устанавливать, кто может редактировать настройки. Допустимые значения - \"CreatorOnly\" - только создатель, и \"AllAdmins\" - все администраторы с правом изменения профиля группы__\n\n**HowYourBot** - __Разрешение отправки сообщений через @HowYourBot. При значении 0 будет автоудаление сообщений__\n\n**FiltersActive** - Позволяет включать и выключать систему фильтров\n\n\nИспользуйте /set [НазваниеПараметра] [Значение(True\\False)] для изменения параметров')
 
 
 @bot.on(events.NewMessage(pattern="/set"))
@@ -1252,7 +1236,8 @@ async def setCommand(msg):
         "greeting": "SPECIFIC_custom_hello",
         "whocanchangesettings": "STRING_who_can_change_settings",
         "captcha": "STRING_captcha",
-        "howyourbot": "BOOL_howyourbot"
+        "howyourbot": "BOOL_howyourbot",
+        "filtersactive": "BOOL_filters_active"
     }
     textSplit = msg.raw_text.replace("/set ", "").replace("/set@aethermgr_bot ", "").replace("_", "").replace("-",
                                                                                                               "").lower().split(
@@ -1316,12 +1301,12 @@ async def setCommand(msg):
         settingName = settingToChange.replace("STRING_", "")
         allowedStringValues = {
             "who_can_change_settings": ["creatoronly", "alladmins"],
-            "captcha": ["on", "adonly", "off"]
+            "captcha": ["on", "ad_only", "off"]
         }
         goodToGo = False  # <--- Useless variable
         try:
             if textSplit[1] in allowedStringValues[settingName]:
-                goodToGo = True
+                goodToGo = True # <--- Useless variable
             else:
                 await msg.reply(
                     f"❌ **__Вы указали неверное значение для параметра. Доступные: {str(allowedStringValues[settingName])}__**")
@@ -1349,10 +1334,10 @@ async def setCommand(msg):
 @logger.catch
 async def memeui(msg):
     checkResult = db.getSettingsForChat(msg.chat_id, "react_on_xiaomi")
-    if checkResult == '1':
+    if bool(checkResult):
         global requests_per_this_session
         requests_per_this_session += 1
-        choise = random.randint(-1, 5)
+        choise = randint(-1, 5)
         if choise == 1:
             await bot.send_file(msg.chat_id, 'miui.ogg', voice_note=True, reply_to=msg)
         elif choise == 2:
@@ -1430,7 +1415,7 @@ async def counter(msg):
         requesterPerms = await bot.get_permissions(msg.chat, msg.sender)
         if not requesterPerms.is_admin:
             try:
-                await bot.edit_permissions(msg.chat, msg.sender, datetime.timedelta(days=3), send_messages=False)
+                await bot.edit_permissions(msg.chat, msg.sender, timedelta(days=3), send_messages=False)
                 await msg.delete()
                 return
             except Exception as e:
@@ -1484,10 +1469,10 @@ async def counter(msg):
 async def go(msg):
     global requests_per_this_session
     requests_per_this_session += 1
-    answers = ['го', "не", 'давай', 'нет', 'не хочу', 'погнали', 'хз']
-    select = random.randint(0, len(answers) - 1)
+    answers = ['го', 'не', 'давай', 'нет', 'не хочу', 'погнали', 'хз']
+    select = randint(0, len(answers) - 1)
     async with bot.action(msg.chat_id, 'typing'):
-        await asyncio.sleep(random.randint(1, 4))
+        await asyncio.sleep(randint(1, 4))
         await msg.reply(answers[select])
 
 
@@ -1641,10 +1626,10 @@ async def cube(msg):
             result = await msg.reply("**__Увы, ничья__**")
             num = None
         elif my_value > his_value:
-            num = 0 - (random.randint(1, 20) * (my_value - his_value))
+            num = 0 - (randint(1, 20) * (my_value - his_value))
             result = await msg.reply(f"**__Вы проиграли, и теряете {str(num).replace('-', '')} монет.__**")
         else:
-            num = random.randint(1, 20) * (his_value - my_value)
+            num = randint(1, 20) * (his_value - my_value)
             result = await msg.reply(f"**__Вы выиграли, и получаете {str(num)} монет.__**")
         messages_to_delete.append(result.id)
         if num:
@@ -1700,10 +1685,10 @@ async def darts(msg):
             result = await msg.reply("**__Увы, ничья__**")
             num = None
         elif my_value > his_value:
-            num = 0 - (random.randint(1, 20) * (my_value - his_value))
+            num = 0 - (randint(1, 20) * (my_value - his_value))
             result = await msg.reply(f"**__Вы проиграли, и теряете {str(num).replace('-', '')} монет.__**")
         else:
-            num = random.randint(1, 20) * (his_value - my_value)
+            num = randint(1, 20) * (his_value - my_value)
             result = await msg.reply(f"**__Вы выиграли, и получаете {str(num)} монет.__**")
         messages_to_delete.append(result.id)
         if num:
@@ -1725,7 +1710,7 @@ async def darts(msg):
 @bot.on(events.NewMessage(pattern='/screenshot|/url|скриншот|screenshot|\?'))
 @logger.catch
 async def get_link_for_scrn(msg):
-    return  # Turned off until I find a valid screenshoting API
+    return  # <------------------------------------------------------ Turned off until I find a valid screenshoting API
     global requests_per_this_session
     requests_per_this_session += 1
     if msg.is_reply:
@@ -1813,7 +1798,7 @@ async def link_screenshot(event, msg, url, my_msg):
                             nsfw_score = 0
                     if not float(nsfw_score) > 0.25:
                         await my_msg.edit('🔎 **__В процессе... (Отправка)__**')
-                        num = str(random.randint(0, 999999))
+                        num = str(randint(0, 999999))
                         with open(f"temp/siteScreenshot_{num}.jpg", "wb") as fileToWrite:
                             fileToWrite.write(file.content)
                         await bot.send_file(event.chat_id,
@@ -1827,17 +1812,44 @@ async def link_screenshot(event, msg, url, my_msg):
         except TimeoutException:
             await msg.reply('❌ **__Процесс занял слишком много времени и был прерван.__**')
 
+@logger.catch
+async def parseAllChatsParticipantCount():
+    db.chatsCursor.execute("SELECT chid FROM chats WHERE isparticipant = 1")
+    targetChats = db.chatsCursor.fetchall()[0]
+    for targetChat in targetChats:
+        participants = await bot.get_participants(int(targetChat))
+        participantsCount = len(participants)
+        time = str(datetime.now())
+        db.otherCursor.execute(f"INSERT INTO peopleCount (chid, count, datetime) VALUES ({targetChat}, {participantsCount}, \"{time}\")")
+    db.otherDB.commit()
+    logger.info("Participants count arsing complete!")
+
+
+
+def updateFiltersList():
+    global filtersDictionary
+    startTime = time.perf_counter()
+    filtersDictionary = db.getFilters()
+    endTime = time.perf_counter()
+    logger.debug(f"Parsed {str(len(filtersDictionary))} chat filter entries in {str(endTime - startTime)}s")
+
 
 
 @logger.catch
 async def preinit():
     schedule.every(30).minutes.do(backupDatabase)
+    # try:
+    #     aioschedule.every(8).seconds.do(asyncio.run_coroutine_threadsafe(parseAllChatsParticipantCount(), bot.loop))
+    # except Exception:
+    #     logger.warning(f"Caught an exception while starting participantsCountParser")
     backgroundScheduleThread = threading.Thread(target=scheduleThreader, daemon=True)
     backgroundScheduleThread.start()
     logger.debug("Scheduled database backup for every 30 mins")
     if os.name == "nt":
         logger.warning("\n================================\nDETECTED WINDOWS\nBe aware that bot is VERY\nunstable on this platform.\nYou should consider using\nWSL or VM\n================================")
-    logger.info('PreInit success!')
+    logger.debug("Importing filters...")
+    updateFiltersList()
+    
 
 
 
@@ -1978,22 +1990,12 @@ async def noteList(msg):
     myReply = await msg.reply(text)
 
 
-@bot.on(events.NewMessage(pattern=r'(?i).*nullify.cc*'))
-@logger.catch
-async def nullify_warning(msg):
-    m = msg.raw_text
-    await msg.delete()
-    myMsg = await bot.send_message(msg.chat_id,
-                                   f'⚠**__Будьте осторожны! Эти ссылки могут содержать вредоносный код, который трудно выявить. Даже если ссылка кажется пустой - будьте внимательны! Сервисы по типу nullify.cc могут использовать невидимые символы. Переходите по ссылке только в том случае, если доверяете отправителю. \nТекст сообщения:\n__**{msg.sender.first_name}: {m}')
-    await asyncio.sleep(10)
-    await myMsg.delete()
 
 
 @bot.on(events.NewMessage(pattern='/shutdown', from_users=myid))
 @logger.catch
 async def stop(msg):
-    await msg.reply('Остановка бота...')
-    os.system('touch stopping')
+    await msg.reply('**__Бот отключён__**')
     await bot.disconnect()
 
 
@@ -2007,7 +2009,7 @@ async def recognize_voice(msg):
         target = msg
     if target.voice:
         my_msg = await msg.reply(text)
-        num = str(random.randint(10000, 99999))
+        num = str(randint(10000, 99999))
         await target.download_media(f'temp/audio{num}.mp3')
         ffmpegResult = subprocess.run(f'ffmpeg -hide_banner -loglevel error -i temp/audio{num}.mp3 temp/audio{num}.wav', shell=True,
                        text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -2178,7 +2180,7 @@ async def report(msg):
     chat_title = "c/" + str(msg.chat.id)
     if msg.chat.username:
         chat_title = msg.chat.username
-    text = f"⚠️ **__Новая жалоба в {msg.chat.title}\nОт: {msg.sender.first_name + ' ' + str(msg.sender.last_name)}\nНа: {reply.sender.first_name + ' ' + str(reply.sender.last_name)}\nПричина: {msg.raw_text.replace('/report ', '').replace('/report@aethermgr_bot ', '').replace('/report', 'Не указана').replace('/report@aethermgr_bot', 'Не указана')}\n\n[Перейти к сообщению](https://t.me/{chat_title}/{msg.id})__**".replace(
+    text = f"⚠️ **__Новая жалоба в {msg.chat.title}\nОт: {msg.sender.first_name + ' ' + str(msg.sender.last_name)}\nНа: {reply.sender.first_name + ' ' + str(reply.sender.last_name)}\nПричина: {msg.raw_text.replace('/report ', '').replace('/report@aethermgr_bot ', '').replace('/report', 'Не указана').replace('/report@aethermgr_bot', 'Не указана')}\n\n[Перейти к сообщению](https://t.me/{chat_title}/{reply.id})__**".replace(
         " None", "")
     notified = 0
     async for admin in bot.iter_participants(msg.chat, filter=ChannelParticipantsAdmins):
@@ -2212,6 +2214,10 @@ def backupDatabase():
 def scheduleThreader():
     while True:
         schedule.run_pending()
+        loop = asyncio.new_event_loop()
+        loop.run_until_complete(aioschedule.run_pending())
+        loop.stop()
+        loop.close()
         time.sleep(1)
 
 
@@ -2261,7 +2267,7 @@ async def roll(msg):
                 pass
     else:
         limit = 100
-    rollResult = random.randint(0, limit)
+    rollResult = randint(0, limit)
     myReply = await msg.reply(f"**__Нароллил {rollResult}__**")
     if rollResult == 727:
         await msg.reply("WYSI")
@@ -2283,7 +2289,96 @@ async def donationRedirect(msg):
         return
     else:
         logger.info(f"Got a donation info request from {msg.sender.id} in PM")
-        await msg.reply("**__Во первых, хочется поблагодарить за интерес к поддержке разработки бота. Это на самом деле мотивирует. Если ты не просто прописываешь команду ради интереса, а действительно хочешь поддержать разработку рублём, сделать это можно по ссылкам ниже:\n\n[DonationAlerts](https://donationalerts.com/r/aethermagee)\n[QIWI](https://qiwi.ru/n/ADDEA17)\n\nЕщё раз спасибо.__**", link_preview=False)
+        await msg.reply("**__Во первых, хочется поблагодарить за интерес к поддержке разработки бота. Это на самом деле мотивирует. Если ты не просто прописываешь команду ради интереса, а действительно хочешь поддержать разработку деньгами, сделать это можно по ссылкам ниже:\n\n[DonationAlerts](https://donationalerts.com/r/aethermagee)\n[QIWI](https://qiwi.ru/n/ADDEA174)\n\nЕщё раз спасибо.__**", link_preview=False)
+
+
+
+@bot.on(events.NewMessage(func=lambda x: not x.is_private))
+@logger.catch
+async def filterMainHandler(msg):
+    filtersForCurrentChat = filtersDictionary[msg.chat_id]
+    for filter in filtersForCurrentChat:
+        if len(msg.raw_text.split(" ")) <= 1:
+            if filter["trigger"] in msg.raw_text: 
+                    checkIfAllowedResult = db.getSettingsForChat(msg.chat_id, "filters_active")[0][0]
+                    if bool(checkIfAllowedResult):
+                        await msg.reply(filter["reply"])
+        else: 
+            if " " + filter["trigger"] in msg.raw_text: 
+                checkIfAllowedResult = db.getSettingsForChat(msg.chat_id, "filters_active")[0][0]
+                if not bool(checkIfAllowedResult):
+                    await msg.reply(filter["reply"])
+
+@bot.on(events.NewMessage(pattern="/filter", func=lambda x: not x.is_private))
+@logger.catch
+async def filterCommandHandler(msg):
+    perms = await bot.get_permissions(msg.chat, msg.sender)
+    if not perms.change_info:
+        myReply = await msg.reply("❌ **__Вы не являетесь админом__**")
+        await asyncio.sleep(5)
+        await myReply.delete()
+    checkIfAllowedResult = db.getSettingsForChat(msg.chat_id, "filters_active")[0][0]
+    if not bool(checkIfAllowedResult):
+        myReply = await msg.reply("❌ **__Система фильтров в данный момент отключена (Параметр: `FiltersActive`)__**")
+        await asyncio.sleep(5)
+        await myReply.delete()
+    command = msg.raw_text.replace("/filter ", "").replace("/filter", "").lower().split(" ")
+    logger.info("Got filter command: " + str(command) + f" CHID: {msg.chat_id} UID: {msg.sender.id}")
+    if command[0] == "help": 
+        textToReply = """**__Помощь по команде /filter:
+Данная команда позволяет управлять фильтрами в данном чате. Фильтры - система реагирования и ответов на определённый текст в сообщениях.
+
+Команда применяется так: `/filter [подкоманда] [параметр1] [параметр2] [итд]`
+Существует несколько подкоманд:
+1) `add` - Подкоманда указывает боту добавить определённый фильтр. Она принимает текст, на который нужно реагировать (первый параметр, т.е. 1 слово) и текст, которым нужно ответить.
+Например: `/filter add привет как дела?` - Эта команда настроит бота отвечать на все сообщения со словом "привет" текстом "как дела?"
+2) `show` - Подкоманда покажет все существующие фильтры в чате. Она не принимает никаких дополнительных параметров
+3) `delete` - Подкоманда указывает боту удалить определённый фильтр. Она принимает только текст, на который нужно реагировать (первый параметр, т.е. 1 слово)
+Например: `/filter delete привет` - Эта команда удалит фильтр(ы), срабатывающие на "привет"
+
+Это сообщение будет удалено через 45 секунд__**"""
+        myReply = await msg.reply(textToReply)
+        await asyncio.sleep(45)
+        await myReply.delete()
+        return
+    if command[0] == "add":
+        filterTrigger = command[1].replace(";","").replace("drop", "").replace("(","").replace(")","").replace("|", "").replace("`", "").replace("\\", "")
+        command.remove(command[1])
+        command.remove(command[0])
+        filterReplyText = " ".join(command).replace(";","").replace("drop", "").replace("(","").replace(")","").replace("|", "").replace("`", "").replace("\\", "")
+        functionOutput = db.addFilter(msg.chat_id, filterTrigger, filterReplyText)
+        if functionOutput == "Success":
+            updateFiltersList()
+            myReply = await msg.reply("✅ **__Фильтр успешно добавлен__**")
+        else:
+            myReply = await msg.reply("❌ **__Данный фильтр уже существует__**")
+        await asyncio.sleep(5)
+        await myReply.delete()
+        return
+    if command[0] == "show":
+        filtersForCurrentChat = filtersDictionary[msg.chat_id]
+        textToReply = "**__Вот все доступные в чате фильтры:__**"
+        if filtersForCurrentChat == None: 
+            textToReply = "**__В данном чате отсутствуют какие либо фильтры__**"
+        else:
+            for filter in filtersForCurrentChat:
+                textToReply += f"\n`{filter['trigger']}` - `{filter['reply']}`"
+        myReply = await msg.reply(textToReply)
+        return
+    if command[0] == "delete":
+        filterTrigger = command[1].replace(";","").replace("drop", "").replace("(","").replace(")","").replace("|", "").replace("`", "").replace("\\", "")
+        functionOutput = db.removeFilter(msg.chat_id, filterTrigger)
+        if functionOutput == "Success":
+            myReply = await msg.reply("✅ **__Фильтр успешно удалён__**")
+            updateFiltersList()
+        if functionOutput == "NothingToDelete" or functionOutput == "FilterNotFound":
+            myReply = await msg.reply("❌ **__Данный фильтр не существует__**")
+        await asyncio.sleep(7.5)
+        await myReply.delete()
+
+    
+        
+    
 
 
 
@@ -2296,27 +2391,36 @@ async def donationRedirect(msg):
 # Starting
 # Checking if bot was restarted and other stuff (kinda useless now, but I'll let it be...)
 logger.info("Starting PreInit...")
+preinitBegin = time.perf_counter()
 bot.loop.run_until_complete(preinit())
+preinitEnd = time.perf_counter()
+logger.info(f"PreInit finished in {str(preinitEnd - preinitBegin)}s")
 
 # Starting the bot itself, all the code before is the initiation of functions and handlers
 logger.info("Starting Init...")
 @logger.catch
 def init():
-    logger.success("Started!")
-    bot.run_until_disconnected()
+    try:
+        logger.success("Started! Receiving messages...")
+        bot.run_until_disconnected()
+    except KeyboardInterrupt: 
+        logger.info("Exiting due to Ctrl+C...")
+        exit()
+    except Exception as e: 
+        logger.error("Exiting due to unhandled exception...")
+        num = randint(0000, 9999)
+        with open(f"traceback{str(num)}.txt", "w") as file:
+            file.write(str(e))
+        logger.debug(f"Exception log saved to traceback{str(num)}.txt")
+        exit()
+init()
 
 
-if __name__ == "__main__":
-    init()
-else:
-    logger.exception("AetherManager's main file can't be used as a module!")
-    exit()
 
 # Exiting
 logger.info("Exiting because of Ctrl+C...")
 exit()
 
 # TODO:
-# Filters...?                                           <-- Can cause a lot of performance issues
+# Filters...?                                           <-- Can cause a lot of performance issues && WIP
 # More chat cleanup to the god of chat cleanup          <-- Can (probably) damage user experience when too much
-# Simplify cube/darts
