@@ -18,7 +18,6 @@ import re
 import signal
 import subprocess
 import time
-import aioschedule
 from contextlib import contextmanager
 import emoji
 import psutil
@@ -1838,10 +1837,6 @@ def updateFiltersList():
 @logger.catch
 async def preinit():
     schedule.every(30).minutes.do(backupDatabase)
-    # try:
-    #     aioschedule.every(8).seconds.do(asyncio.run_coroutine_threadsafe(parseAllChatsParticipantCount(), bot.loop))
-    # except Exception:
-    #     logger.warning(f"Caught an exception while starting participantsCountParser")
     backgroundScheduleThread = threading.Thread(target=scheduleThreader, daemon=True)
     backgroundScheduleThread.start()
     logger.debug("Scheduled database backup for every 30 mins")
@@ -2215,10 +2210,6 @@ def backupDatabase():
 def scheduleThreader():
     while True:
         schedule.run_pending()
-        loop = asyncio.new_event_loop()
-        loop.run_until_complete(aioschedule.run_pending())
-        loop.stop()
-        loop.close()
         time.sleep(1)
 
 
