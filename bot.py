@@ -2306,8 +2306,10 @@ async def filterMainHandler(msg):
         else: 
             if " " + filter["trigger"] in msg.raw_text: 
                 checkIfAllowedResult = db.getSettingsForChat(msg.chat_id, "filters_active")[0][0]
-                if not bool(checkIfAllowedResult):
+                if bool(checkIfAllowedResult):
                     await msg.reply(filter["reply"])
+
+
 
 @bot.on(events.NewMessage(pattern="/filter", func=lambda x: not x.is_private))
 @logger.catch
@@ -2342,10 +2344,10 @@ async def filterCommandHandler(msg):
         await myReply.delete()
         return
     if command[0] == "add":
-        filterTrigger = command[1].replace(";","").replace("drop", "").replace("(","").replace(")","").replace("|", "").replace("`", "").replace("\\", "")
+        filterTrigger = command[1].replace(";","").replace("drop", "").replace("(","").replace(")","").replace("|", "").replace("`", "").replace("\\", "").replace('\"', '').replace('\'', '').replace('\\','/').replace('[','').replace(']', '').replace("'", '').replace(",", "")
         command.remove(command[1])
         command.remove(command[0])
-        filterReplyText = " ".join(command).replace(";","").replace("drop", "").replace("(","").replace(")","").replace("|", "").replace("`", "").replace("\\", "")
+        filterReplyText = " ".join(command).replace(";","").replace("drop", "").replace("(","").replace(")","").replace("|", "").replace("`", "").replace("\\", "").replace('\"', '').replace('\'', '').replace('\\','/').replace('[','').replace(']', '').replace("'", '').replace(",", "")
         functionOutput = db.addFilter(msg.chat_id, filterTrigger, filterReplyText)
         if functionOutput == "Success":
             updateFiltersList()
@@ -2366,7 +2368,7 @@ async def filterCommandHandler(msg):
         myReply = await msg.reply(textToReply)
         return
     if command[0] == "delete":
-        filterTrigger = command[1].replace(";","").replace("drop", "").replace("(","").replace(")","").replace("|", "").replace("`", "").replace("\\", "")
+        filterTrigger = command[1].replace(";","").replace("drop", "").replace("(","").replace(")","").replace("|", "").replace("`", "").replace("\\", "").replace('\"', '').replace('\'', '').replace('\\','/').replace('[','').replace(']', '').replace("'", '').replace(",", "")
         functionOutput = db.removeFilter(msg.chat_id, filterTrigger)
         if functionOutput == "Success":
             myReply = await msg.reply("✅ **__Фильтр успешно удалён__**")
