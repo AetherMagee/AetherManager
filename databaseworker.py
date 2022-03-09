@@ -297,6 +297,7 @@ def addFilter(chatID, filterTrigger, filterReply):
     if not result[0][0]:
         chatsCursor.execute(f"UPDATE chats SET filters = \"[{str(filter)}]\" WHERE chid = {chatID}")
         chatsDB.commit()
+        return "Success"
     else:
         oldfilters = eval(result[0][0])
         if {"trigger": filterTrigger, "reply": filterReply} in oldfilters:

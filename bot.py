@@ -2289,8 +2289,10 @@ async def donationRedirect(msg):
 @logger.catch
 async def filterMainHandler(msg):
     filtersForCurrentChat = filtersDictionary[msg.chat_id]
+    if not filtersForCurrentChat:
+        return
     for filter in filtersForCurrentChat:
-        if len(msg.raw_text.split(" ")) <= 1:
+        if len(msg.raw_text.split(" ")) <= 1 or len(filter["trigger"].split(" ")) > 1:
             if filter["trigger"] in msg.raw_text: 
                     checkIfAllowedResult = db.getSettingsForChat(msg.chat_id, "filters_active")[0][0]
                     if bool(checkIfAllowedResult):
@@ -2316,16 +2318,16 @@ async def filterCommandHandler(msg):
         myReply = await msg.reply("❌ **__Система фильтров в данный момент отключена (Параметр: `FiltersActive`)__**")
         await asyncio.sleep(5)
         await myReply.delete()
-    command = msg.raw_text.replace("/filter ", "").replace("/filter", "").lower().split(" ")
+    command = msg.raw_text.replace("/filter ", "").replace("/filter", "").lower().replace(";","").replace("drop", "").replace("(","").replace(")","").replace("|", "").replace("`", "").replace("\\", "").replace('\"', '').replace('\'', '').replace('\\','/').replace('[','').replace(']', '').replace("'", '').replace(",", "")
     logger.info("Got filter command: " + str(command) + f" CHID: {msg.chat_id} UID: {msg.sender.id}")
-    if command[0] == "help": 
+    if command.startswith("help"): 
         textToReply = """**__Помощь по команде /filter:
 Данная команда позволяет управлять фильтрами в данном чате. Фильтры - система реагирования и ответов на определённый текст в сообщениях.
 
 Команда применяется так: `/filter [подкоманда] [параметр1] [параметр2] [итд]`
 Существует несколько подкоманд:
-1) `add` - Подкоманда указывает боту добавить определённый фильтр. Она принимает текст, на который нужно реагировать (первый параметр, т.е. 1 слово) и текст, которым нужно ответить.
-Например: `/filter add привет как дела?` - Эта команда настроит бота отвечать на все сообщения со словом "привет" текстом "как дела?"
+1) `add` - Подкоманда указывает боту добавить определённый фильтр. Она принимает текст, на который нужно реагировать (первый параметр, т.е. 1 слово) и текст, которым нужно ответить. Первый и второй параметры разделяются с помощью \" : \"
+Например: `/filter add привет : как дела?` - Эта команда настроит бота отвечать на все сообщения со словом "привет" текстом "как дела?"
 2) `show` - Подкоманда покажет все существующие фильтры в чате. Она не принимает никаких дополнительных параметров
 3) `delete` - Подкоманда указывает боту удалить определённый фильтр. Она принимает только текст, на который нужно реагировать (первый параметр, т.е. 1 слово)
 Например: `/filter delete привет` - Эта команда удалит фильтр(ы), срабатывающие на "привет"
@@ -2335,12 +2337,14 @@ async def filterCommandHandler(msg):
         await asyncio.sleep(45)
         await myReply.delete()
         return
-    if command[0] == "add":
-        filterTrigger = command[1].replace(";","").replace("drop", "").replace("(","").replace(")","").replace("|", "").replace("`", "").replace("\\", "").replace('\"', '').replace('\'', '').replace('\\','/').replace('[','').replace(']', '').replace("'", '').replace(",", "")
-        command.remove(command[1])
-        command.remove(command[0])
-        filterReplyText = " ".join(command).replace(";","").replace("drop", "").replace("(","").replace(")","").replace("|", "").replace("`", "").replace("\\", "").replace('\"', '').replace('\'', '').replace('\\','/').replace('[','').replace(']', '').replace("'", '').replace(",", "")
-        functionOutput = db.addFilter(msg.chat_id, filterTrigger, filterReplyText)
+    if command.startswith('add '):
+        arguments = command.replace('add ','').split(" : ")
+        if len(arguments) != 2:
+            myReply = await msg.reply("❌ **__Кое-что пошло не так: разделитель \" : \" не был указан или используется больше одного раза__**")
+            await asyncio.sleep(7.5)
+            await myReply.delete()
+            return
+        functionOutput = db.addFilter(msg.chat_id, arguments[0], arguments[1])
         if functionOutput == "Success":
             updateFiltersList()
             myReply = await msg.reply("✅ **__Фильтр успешно добавлен__**")
@@ -2349,7 +2353,7 @@ async def filterCommandHandler(msg):
         await asyncio.sleep(5)
         await myReply.delete()
         return
-    if command[0] == "show":
+    if command.startswith('show'):
         filtersForCurrentChat = filtersDictionary[msg.chat_id]
         textToReply = "**__Вот все доступные в чате фильтры:__**"
         if filtersForCurrentChat == None: 
@@ -2359,9 +2363,9 @@ async def filterCommandHandler(msg):
                 textToReply += f"\n`{filter['trigger']}` - `{filter['reply']}`"
         myReply = await msg.reply(textToReply)
         return
-    if command[0] == "delete":
-        filterTrigger = command[1].replace(";","").replace("drop", "").replace("(","").replace(")","").replace("|", "").replace("`", "").replace("\\", "").replace('\"', '').replace('\'', '').replace('\\','/').replace('[','').replace(']', '').replace("'", '').replace(",", "")
-        functionOutput = db.removeFilter(msg.chat_id, filterTrigger)
+    if command.startswith('delete '):
+        argument = command.replace('delete ', '')
+        functionOutput = db.removeFilter(msg.chat_id, argument)
         if functionOutput == "Success":
             myReply = await msg.reply("✅ **__Фильтр успешно удалён__**")
             updateFiltersList()
@@ -2369,6 +2373,8 @@ async def filterCommandHandler(msg):
             myReply = await msg.reply("❌ **__Данный фильтр не существует__**")
         await asyncio.sleep(7.5)
         await myReply.delete()
+
+
 
     
         
