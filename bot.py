@@ -336,7 +336,7 @@ async def help(msg):
                          "get": "**__Получение заметки\n\nИспользование: /get имя.заметки__**",
                          "notes": "**__Получение всех заметок в чате__**",
                          "delnote": "**__Удаление заметки\n\nИспользование: /delnote имя.заметки__**",
-                         "settings": "**__Просмотр доступных для изменения параметров__**",
+                         "settingsinfo": "**__Просмотр доступных для изменения параметров__**",
                          "set": "**__Установка параметра для чата. \n\nИспользование: /set название.параметра значение.из./settings__**",
                          "getsettings": "**__Просмотр всех установленных значений__**",
                          "baltop": "**__Получение лидеров чата по балансу__**",
@@ -1173,9 +1173,14 @@ async def muteAdminsWorkerAndBadMsgEraser(msg):
         
 
 
+@bot.on(events.NewMessage(pattern='/settings', func=lambda x: not "settingsinfo" in x.text and not x.is_private))
+@logger.catch
+async def settings_redirect(msg):
+    myReply = await msg.reply("**__Команда /settings была отключена с целью избежания конфликтов с другими ботами. Используйте /settingsinfo для просмотра доступных настроек и /getsettings для просмотра установленных значений__**")
+    await asyncio.sleep(7.5)
+    await myReply.delete()
 
-
-@bot.on(events.NewMessage(pattern='/settings'))
+@bot.on(events.NewMessage(pattern='/settingsinfo'))
 @logger.catch
 async def settings_helper(msg):
     if "@" in msg.text and not "@aethermgr_bot" in msg.text:
@@ -1586,6 +1591,8 @@ async def kickme(msg):
     except:
         return
     if not perms.is_admin:
+        await msg.reply("**__Как пожелаешь...__**")
+        await asyncio.sleep(2.5)
         await bot.kick_participant(msg.chat_id, msg.sender)
 
 
@@ -1821,7 +1828,7 @@ async def parseAllChatsParticipantCount():
         time = str(datetime.now())
         db.otherCursor.execute(f"INSERT INTO peopleCount (chid, count, datetime) VALUES ({targetChat}, {participantsCount}, \"{time}\")")
     db.otherDB.commit()
-    logger.info("Participants count arsing complete!")
+    logger.info("Participants count parsing complete!")
 
 
 
@@ -2162,7 +2169,7 @@ TikTok ссылки (`AllowTiktokLinks`) - {str(chatSettings[0][5])}
 Капча (`captcha`) - {str(chatSettings[0][7])}
 {"Только создатель может" if chatSettings[0][8] == "creatoronly" else "Все администраторы могут"} изменять параметры (`whocanchangesettings`)
 Разрешён HowYourBot (`HowYourBot`) - {str(chatSettings[0][9])}
-Фильтры включены (`FiltersActive`) - {str(chatSettings[0][11])}
+Фильтры включены (`FiltersActive`) - {str(chatSettings[0][12])}
 __**""".replace("1", "✅").replace("0", "❌").replace('ad_only', '🔎').replace('on', '✅').replace('off', '❌')
     myReply = await msg.reply(text)
     await asyncio.sleep(10)
@@ -2395,6 +2402,9 @@ preinitBegin = time.perf_counter()
 bot.loop.run_until_complete(preinit())
 preinitEnd = time.perf_counter()
 logger.info(f"PreInit finished in {str(preinitEnd - preinitBegin)}s")
+
+
+
 
 # Starting the bot itself, all the code before is the initiation of functions and handlers
 logger.info("Starting Init...")
