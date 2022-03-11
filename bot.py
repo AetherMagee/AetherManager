@@ -55,18 +55,8 @@ botid = int(conf.TOKEN.split(":")[0])
 already_changed_rep = []
 already_acted = []
 updateOngoing = False
-filtersDictionary = {}  # <--- WIP
-# Planned format: 
-# {
-#     chatID1: [{(filterString1, filterString2): replyString}, {(filterString3, filterString4): replyString}],
-#     chatID2: [filter3String, filter4String]
-# }
-# Filters will also be stored in DB, but only for shutdown resistance
-# DB will be called only in case of restart or filters edit
-# Calling DB on every message is going to be extremly slow, so I decided to make something like this
-# EDIT-1: Just realised that this is going to be another updater-like background thread, just like scheduleThreader(), fuuuuuuuck
-# EDIT-2: By the way its already WIP as you can see at the end of the file, its just hard af for my tiny brain and time limits
-# EDIT-3: Im idiot lmao, i've written about when the DB is going to be called literally 2 lines above and here im complaining about things i wont do anyways...
+filtersDictionary = {}  
+
 
 
 # Initialising bot
@@ -93,6 +83,8 @@ def time_limit(seconds):
         yield
     finally:
         signal.alarm(0)
+
+
 
 
 def get_timedelta(inputString):
@@ -520,6 +512,13 @@ async def hello(event):
             updateFiltersList()
         else:
             db.editChatEntry(event.chat_id, "isparticipant", "1")
+        try: 
+            whoAdded = await bot.get_entity(event.action_message.from_id)
+        except Exception as e: 
+            print(str(e))
+            return
+        if whoAdded.lang_code:
+            await bot.send_message(whoAdded.id, f"✅ **__Спасибо за добавление в чат! До конца настройки осталось совсем немного: вам нужно зайти в настройки чата, далее > \"Администраторы\", выбрать меня и выдать разрешения. Самый лучший вариант: выдать все разрешения кроме \"Анонимности\", но необходимы мне только два: \"Удаление сообщений\" и \"Блокировка участников\"__**")
     if event.user_kicked and user.id == botid:
         logger.info("Detected my deletion from chat " + event.chat.title)
         logger.info("Marking myself as not participant...")
