@@ -526,67 +526,6 @@ async def hello(event):
         logger.info(out)
 
 
-# @bot.on(events.ChatAction)
-# @logger.catch
-# async def hello(event):
-#     user = await bot.get_entity(event.user_id)
-#     if event.user_joined:
-#         cursor.execute(f"SELECT custom_hello, captcha FROM settings WHERE chat_id = {event.chat_id}")
-#         custom_hello, captcha_status = cursor.fetchone()
-#         if captcha_status == 'on':
-#             result = await captcha(event)
-#             if result == 'Pass':
-#                 await say_hello(event, custom_hello)
-#             elif result == 'Error':
-#                 await notify_admins(event.chat, f"🔔 **__Сервисное уведомление из {event.chat.title}\nВо время работы капчи произошла ошибка. Пожалуйста, проверьте разрешения бота в чате. Если вы считаете, что проблема не в них, используйте /bugreport в указанном выше чате__**")
-#             else:
-#                 pass
-#         elif captcha_status == 'ad_only':
-#             ad_bot = False
-#             full_user_instance = await bot(GetFullUserRequest(event.user))
-#             forbidden_words_desc = ['t.me', 'joinchat', '🍓']
-#             forbidden_words_name = ["link", "desc", "описание"]
-#             for word in forbidden_words_desc:
-#                 if word in str(full_user_instance.about):
-#                     ad_bot = True
-#             for word in forbidden_words_name:
-#                 if word in str(user.first_name) + " " + str(user.last_name):
-#                     ad_bot = True
-#             if ad_bot:
-#                 result = await captcha(event)
-#                 if result == 'Pass':
-#                     await say_hello(event, custom_hello)
-#                 elif result == 'Error':
-#                     await notify_admins(event.chat, f"🔔 **__Сервисное уведомление из {event.chat.title}\nВо время работы капчи произошла ошибка. Пожалуйста, проверьте разрешения бота в чате. Если вы считаете, что проблема не в них, используйте /bugreport в указанном выше чате__**")
-#                 else:
-#                     pass
-#             else:
-#                 await say_hello(event, custom_hello)
-#         else:
-#             await say_hello(event, custom_hello)
-#     if event.user_added:
-#         if not user.bot:
-#             await event.reply('Интересно, не против ли его воли его сюда добавили?')
-#         elif user.id == 2028159238:
-#             logger.info('Обнаружил добавление в новый чат ({chid})'.format(chid=str(event.chat.title)))
-#             cursor.execute(f"SELECT EXISTS(SELECT * FROM settings WHERE chat_id = {event.chat_id})")
-#             if not bool(cursor.fetchone()[0]):
-#                 cursor.execute(f"INSERT INTO settings (chat_id) VALUES ({event.chat_id})")
-#                 db_main.commit()
-#                 logger.info("Записал настройки для чата")
-#             else:
-#                 logger.info('Настройки чата уже есть в базе.')
-#             async with bot.action(event.chat, "typing"):
-#                 await asyncio.sleep(randint(1,3))
-#             await event.reply("👋")
-#             async with bot.action(event.chat, "typing"):
-#                 await asyncio.sleep(randint(1,3))
-#             await event.reply(
-#                 '**__Здрасьте :P\nЯ - бот, призванный упростить администрирование групп\nБольше обо мне можно узнать с помощью /helpme и /aboutbot__**')
-#             await parseall(event)
-#         else:
-#             await event.reply('Кхем...')
-
 
 @bot.on(events.NewMessage(pattern=r'(?i)бот'))
 @logger.catch
@@ -600,7 +539,7 @@ async def ping(msg):
             if not msg.is_reply:
                 logger.info('Got a ping from ' + msg.sender.first_name)
                 answer_list = ['что?', "✅ Онлайн", 'чё?', '?', "✅ Онлайн", 'слава украине', "✅ Онлайн",
-                               "чё надо", 'м', 'онлине', "ацтань, я дед инсайд", "👋"]
+                               "чё надо", "✅ Онлайн", 'м', 'онлине', "✅ Онлайн", "ацтань, я дед инсайд", "👋"]
                 select = randint(0, len(answer_list) - 1)
                 await msg.reply(answer_list[select])
 
@@ -2324,7 +2263,7 @@ async def filterCommandHandler(msg):
         myReply = await msg.reply("❌ **__Система фильтров в данный момент отключена (Параметр: `FiltersActive`)__**")
         await asyncio.sleep(5)
         await myReply.delete()
-    command = msg.raw_text.replace("/filter ", "").replace("/filter", "").lower().replace(";","").replace("drop", "").replace("(","").replace(")","").replace("|", "").replace("`", "").replace("\\", "").replace('\"', '').replace('\'', '').replace('\\','/').replace('[','').replace(']', '').replace("'", '').replace(",", "")
+    command = msg.raw_text.replace("/filter ", "").replace("/filter", "").lower().replace(";","").replace("drop", "").replace("(","").replace(")","").replace("|", "").replace("`", "").replace("\\", "").replace('\"', '').replace('\'', '').replace('\\','/').replace('[','').replace(']', '').replace("'", '')
     logger.info("Got filter command: " + str(command) + f" CHID: {msg.chat_id} UID: {msg.sender.id}")
     if command.startswith("help"): 
         textToReply = """**__Помощь по команде /filter:
@@ -2362,7 +2301,7 @@ async def filterCommandHandler(msg):
     if command.startswith('show'):
         filtersForCurrentChat = filtersDictionary[msg.chat_id]
         textToReply = "**__Вот все доступные в чате фильтры:__**"
-        if filtersForCurrentChat == None: 
+        if not filtersForCurrentChat: 
             textToReply = "**__В данном чате отсутствуют какие либо фильтры__**"
         else:
             for filter in filtersForCurrentChat:
