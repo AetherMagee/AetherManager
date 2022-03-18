@@ -641,6 +641,11 @@ async def mute(msg):
             await myReply.delete()
             return
         # Now we are sure that we can mute the user, so we can continue...
+        if target.id == msg.sender.id:
+            myReply = await msg.reply("❌ **__Вы не можете замутить себя__**")
+            await asyncio.sleep(5)
+            await myReply.delete()
+            return
         functionOutput = db.registerNewMutedAdmin(target.id, msg.chat_id, "muteRequest")
         if functionOutput == "AlreadyMutedError":
             myReply = await msg.reply("❌ **__Пользователь уже находится в муте__**")
@@ -731,6 +736,11 @@ async def unmute(msg):
         await myReply.delete()
         return
     else:
+        if target.id == msg.sender.id:
+            myReply = await msg.reply("❌ **__Вы не можете размутить себя__**")
+            await asyncio.sleep(5)
+            await myReply.delete()
+            return
         functionOutput = db.deleteMutedAdmin(target.id, msg.chat_id)
         if functionOutput == "Success":
             text = "✅ **__Готово, пользователь был размучен__**"
@@ -2233,7 +2243,10 @@ async def donationRedirect(msg):
 @bot.on(events.NewMessage(func=lambda x: not x.is_private))
 @logger.catch
 async def filterMainHandler(msg):
-    filtersForCurrentChat = filtersDictionary[msg.chat_id]
+    try:
+        filtersForCurrentChat = filtersDictionary[msg.chat_id]
+    except KeyError:
+        return
     if not filtersForCurrentChat:
         return
     for filter in filtersForCurrentChat:
