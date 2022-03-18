@@ -204,7 +204,7 @@ async def info_get(msg):
     await msg.reply(text)
 
 
-@bot.on(events.NewMessage(pattern=r'(?i)реп\+'))
+@bot.on(events.NewMessage(pattern=r'(?i)реп\+|согл|согласен|\+|жиза'))
 @logger.catch
 async def rep_plus(msg):
     global requests_per_this_session
