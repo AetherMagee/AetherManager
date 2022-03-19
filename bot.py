@@ -229,7 +229,7 @@ async def rep_plus(msg):
         db.addUserEntry(target.id)
         await rep_plus(msg)
         return
-    newReputation = str(int(currentReputation) + 1)
+    newReputation = str(int(currentReputation[0][0]) + 1)
     db.editUserEntry(target.id, "reputation", newReputation)
     myReply = await msg.reply("✅ **__Поднял пользователю репутацию__**")
     already_changed_rep.append(msg.sender.id)
@@ -263,7 +263,7 @@ async def rep_minus(msg):
         db.addUserEntry(target.id)
         await rep_minus(msg)
         return
-    newReputation = str(int(currentReputation) + 1)
+    newReputation = str(int(currentReputation[0][0]) + 1)
     db.editUserEntry(target.id, "reputation", newReputation)
     myReply = await msg.reply("✅ **__Понизил пользователю репутацию__**")
     already_changed_rep.append(msg.sender.id)
@@ -325,11 +325,11 @@ async def help(msg):
                          "cube": "**__Сыграть с ботом в кубик\n\nАльтернативная команда: /dice__**",
                          "darts": "**__Сыграть с ботом в дартс__**",
                          "save": "**__Сохранение заметки\n\nИспользование: /save имя.заметки - в ответ на сообщение__**",
-                         "get": "**__Получение заметки\n\nИспользование: /get имя.заметки__**",
+                         "get": "**__Получение заметки\n\nИспользование: /get имя_заметки__**",
                          "notes": "**__Получение всех заметок в чате__**",
                          "delnote": "**__Удаление заметки\n\nИспользование: /delnote имя.заметки__**",
                          "settingsinfo": "**__Просмотр доступных для изменения параметров__**",
-                         "set": "**__Установка параметра для чата. \n\nИспользование: /set название.параметра значение.из./settings__**",
+                         "set": "**__Установка параметра для чата. \n\nИспользование: /set название_параметра значение_из_/settings__**",
                          "getsettings": "**__Просмотр всех установленных значений__**",
                          "baltop": "**__Получение лидеров чата по балансу__**",
                          "reptop": "**__Получение лидеров чата по репутации__**",
@@ -2383,5 +2383,6 @@ logger.info("Exiting because of Ctrl+C...")
 exit()
 
 # TODO:
-# Filters...?                                           <-- Can cause a lot of performance issues && WIP
+# Filters...?                                           <-- Basic features are done, only actions on trigger left
 # More chat cleanup to the god of chat cleanup          <-- Can (probably) damage user experience when too much
+
