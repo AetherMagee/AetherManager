@@ -372,12 +372,12 @@ async def captcha(event):
     code = str(randint(1000, 9999))
     codepicgen.generate(code)
     code_notify = await event.reply(
-        "⚠️ **__Приветствую! Вам необходимо пройти дополнительную проверку. Ответьте на это сообщение кодом с картинки в течении следующих 10 секунд.__**",
+        "⚠️ **__Приветствую! Вам необходимо пройти дополнительную проверку. Ответьте на это сообщение кодом с картинки в течении следующих 20 секунд.__**",
         file=f"temp/code_{code}.jpg")
     subprocess.run(f"del temp\\code_{code}.jpg || rm -f temp/code_{code}.jpg", shell=True, stderr=subprocess.PIPE)
     try:
-        async with bot.conversation(event.chat, timeout=10) as conv:
-            reply = await conv.get_reply(code_notify)
+        async with bot.conversation(event.chat, timeout=20) as conv:
+            reply = await conv.get_response(code_notify)
             while not reply.text.isnumeric() or not event.user.id == reply.sender.id:
                 reply = await conv.get_reply(code_notify)
     except asyncio.exceptions.TimeoutError:
