@@ -2023,6 +2023,8 @@ async def banhistory(msg):
 @logger.catch
 async def delete(msg):
     if msg.is_reply:
+        perms = await bot.get_permissions(msg.sender, msg.chat)
+        if not perms.is_admin: return
         try:
             await msg.delete()
             reply = await msg.get_reply_message()
