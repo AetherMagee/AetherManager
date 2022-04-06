@@ -377,9 +377,9 @@ async def captcha(event):
     subprocess.run(f"del temp\\code_{code}.jpg || rm -f temp/code_{code}.jpg", shell=True, stderr=subprocess.PIPE)
     try:
         async with bot.conversation(event.chat, timeout=20) as conv:
-            reply = await conv.get_response(code_notify)
+            reply = await conv.get_response()
             while not reply.text.isnumeric() or not event.user.id == reply.sender.id:
-                reply = await conv.get_reply(code_notify)
+                reply = await conv.response()
     except asyncio.exceptions.TimeoutError:
         try:
             await code_notify.delete()
