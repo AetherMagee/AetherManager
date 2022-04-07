@@ -33,7 +33,7 @@ from telethon.tl.types import *
 import codepicgen
 import schedule
 import threading
-
+import screenshot as scrnsht
 
 logger.add("logs/{time}.log")
 print("Finished importing, initializing functions...")
@@ -1664,7 +1664,6 @@ async def darts(msg):
 @bot.on(events.NewMessage(pattern='/screenshot|/url|скриншот|screenshot|\?'))
 @logger.catch
 async def get_link_for_scrn(msg):
-    return  # <------------------------------------------------------ Turned off until I find a valid screenshoting API
     global requests_per_this_session
     requests_per_this_session += 1
     if msg.is_reply:
@@ -1696,7 +1695,7 @@ async def get_link_for_scrn(msg):
                             link = link.lower()
                             try:
                                 await asyncio.subprocess.create_subprocess_exec(
-                                    await link_screenshot(message, msg, timestamp, link, a))
+                                    await link_screenshot(msg, message, link, a))
                             except:
                                 pass
                     await a.delete()
@@ -1730,37 +1729,37 @@ async def link_screenshot(event, msg, url, my_msg):
                 if not target == '':
                     logger.info('Making a screenshot of {}... (Requester: {})'.format(target, msg.sender.first_name))
                     await my_msg.edit('🔎 **__В процессе... (Получение)__**')
-                    url = f"https://image.thum.io/get/width/1920/crop/1080/wait/3/{target}"
-                    file = requests.get(url.format(url))
-                    if not file.ok:
-                        await bot.send_message(event.chat_id, f"❌ **__Не удалось получить скриншот__**: `{target}`")
+                    code = str(randint(0000,9999))
+                    try:
+                        scrnsht.makeScreenshot(url, code)
+                    except:
+                        await bot.send_message(event.chat_id, f"❌ **__Не удалось создать скриншот__**: `{target}`")
                         return
-                    else:
-                        logger.info(f'Checking {target} for nudity... (Requester: {msg.sender.first_name})')
-                        await my_msg.edit('🔎 **__В процессе... (Проверка)__**')
+                    logger.info(f'Checking {target} for nudity... (Requester: {msg.sender.first_name})')
+                    await my_msg.edit('🔎 **__В процессе... (Проверка)__**')
+                    with open(f"temp/screenshot_{code}.png", "rb") as file:
                         nudity_check = requests.post("https://api.deepai.org/api/nsfw-detector",
-                                                     files={'image': file.content, },
-                                                     headers={'api-key': conf.deepai_token,
-                                                              'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'})
+                                                        files={'image': file.read(), },
+                                                        headers={'api-key': conf.deepai_token,
+                                                                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'})
                         nc_inpython = json.loads(str(nudity_check.json()).replace('\'', '\"'))
-                        try:
-                            output = nc_inpython['output']
-                            nsfw_score = dict(output)['nsfw_score']
-                            logger.info('NSFW Score = ' + str(nsfw_score))
-                        except:
-                            print(str(nc_inpython))
-                            nsfw_score = 0
+                    try:
+                        output = nc_inpython['output']
+                        nsfw_score = dict(output)['nsfw_score']
+                        logger.info('NSFW Score = ' + str(nsfw_score))
+                    except:
+                        print(str(nc_inpython))
+                        nsfw_score = 0
                     if not float(nsfw_score) > 0.25:
                         await my_msg.edit('🔎 **__В процессе... (Отправка)__**')
-                        num = str(randint(0, 999999))
-                        with open(f"temp/siteScreenshot_{num}.jpg", "wb") as fileToWrite:
-                            fileToWrite.write(file.content)
                         await bot.send_file(event.chat_id,
-                                            caption=f"✅ **__Вот, скриншот сайта {target}.\nШанс наготы: {nsfw_score * 100}%\nPowered by image.thum.io and deepai.org__**",
-                                            file=f"temp/siteScreenshot_{num}.jpg", reply_to=msg, force_document=True)
+                                            caption=f"✅ **__Вот, скриншот сайта {target}.\nШанс наготы: {nsfw_score * 100}%\nPowered by deepai.org__**",
+                                            file=f"temp/screenshot_{code}.png", reply_to=msg, force_document=True)
+                        logger.success("Sent screenshot successfully")
                     else:
                         logger.info('Detected nudity!')
                         await msg.reply(f'❌ **__На сайте обнаружена нагота! (Уверенность: {nsfw_score * 100}%)__**')
+                    os.remove(f"temp/screenshot_{code}.png")
                 await asyncio.sleep(1)
                 column += 1
         except TimeoutException:
