@@ -205,7 +205,7 @@ async def info_get(msg):
     await msg.reply(text)
 
 
-@bot.on(events.NewMessage(pattern=r'(?i)реп\+|согл|согласен|\+|жиза'))
+@bot.on(events.NewMessage(pattern='(?i)реп\+|согл|согласен|\+|жиза'))
 @logger.catch
 async def rep_plus(msg):
     global requests_per_this_session
@@ -240,7 +240,7 @@ async def rep_plus(msg):
     already_changed_rep.remove(msg.sender.id)
 
 
-@bot.on(events.NewMessage(pattern=r'(?i)реп-'))
+@bot.on(events.NewMessage(pattern='(?i)реп-'))
 @logger.catch
 async def rep_minus(msg):
     global requests_per_this_session
@@ -525,7 +525,7 @@ async def hello(event):
 
 
 
-@bot.on(events.NewMessage(pattern=r'(?i)бот'))
+@bot.on(events.NewMessage(pattern='(?i)бот'))
 @logger.catch
 async def ping(msg):
     global requests_per_this_session
@@ -542,7 +542,7 @@ async def ping(msg):
                 await msg.reply(answer_list[select])
 
 
-@bot.on(events.NewMessage(pattern=r'(?i)мут|/mute', func=lambda x: not x.is_private))
+@bot.on(events.NewMessage(pattern='(?i)мут|/mute', func=lambda x: not x.is_private))
 @logger.catch
 async def mute(msg):
     global requests_per_this_session
@@ -656,7 +656,7 @@ async def mute(msg):
         return
 
 
-@bot.on(events.NewMessage(pattern=r'(?i)размут|/unmute', func=lambda x: not x.is_private))
+@bot.on(events.NewMessage(pattern='(?i)размут|/unmute', func=lambda x: not x.is_private))
 @logger.catch
 async def unmute(msg):
     global requests_per_this_session
@@ -751,7 +751,7 @@ async def unmute(msg):
         await myReply.delete()
 
 
-@bot.on(events.NewMessage(pattern=r'(?i)бан|/ban', func=lambda x: not x.is_private))
+@bot.on(events.NewMessage(pattern='(?i)бан|/ban', func=lambda x: not x.is_private))
 @logger.catch
 async def ban(msg):
     global requests_per_this_session
@@ -843,7 +843,7 @@ async def ban(msg):
         await myReply.delete()
 
 
-@bot.on(events.NewMessage(pattern=r'(?i)разбан|/unban', func=lambda x: not x.is_private))
+@bot.on(events.NewMessage(pattern='(?i)разбан|/unban', func=lambda x: not x.is_private))
 @logger.catch
 async def unban(msg):
     global requests_per_this_session
@@ -916,7 +916,7 @@ async def unban(msg):
         pass
 
 
-@bot.on(events.NewMessage(pattern=r'(?i)кик|/kick', func=lambda x: not x.is_private and not "kickme" in x.raw_text))
+@bot.on(events.NewMessage(pattern='(?i)кик|/kick', func=lambda x: not x.is_private and not "kickme" in x.raw_text))
 @logger.catch
 async def kick(msg):
     global requests_per_this_session
@@ -1035,7 +1035,7 @@ async def parseAllUsers(event):
     logger.debug(f"Parse in {event.chat.title} complete, imported {str(importedAmount)}, errored {str(erroredAmount)}")
 
 
-@bot.on(events.NewMessage(pattern=r'(?i)чатид'))
+@bot.on(events.NewMessage(pattern='(?i)чатид'))
 @logger.catch
 async def chatid(msg):
     global requests_per_this_session
@@ -1280,7 +1280,7 @@ async def setCommand(msg):
 
 
 @bot.on(events.NewMessage(
-    pattern=r'(?i).*miui*|.*миуи*|.*миюай*|.*memeui*|.*xiaomi*|.*ximi*|.*кси*оми*|.*ксяоми*'))
+    pattern='(?i).*miui*|.*миуи*|.*миюай*|.*memeui*|.*xiaomi*|.*ximi*|.*кси*оми*|.*ксяоми*'))
 @logger.catch
 async def memeui(msg):
     checkResult = db.getSettingsForChat(msg.chat_id, "react_on_xiaomi")
@@ -1413,7 +1413,7 @@ async def counter(msg):
     await myReply.delete()
 
 
-@bot.on(events.NewMessage(pattern=r'(?i)бот, го|@aethermgr_bot го'))
+@bot.on(events.NewMessage(pattern='(?i)бот, го|@aethermgr_bot го'))
 @logger.catch
 async def go(msg):
     global requests_per_this_session
