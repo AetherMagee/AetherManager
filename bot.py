@@ -30,10 +30,11 @@ import telethon.errors
 from telethon import *
 from telethon.tl.functions.users import GetFullUserRequest
 from telethon.tl.types import *
-import codepicgen
 import schedule
 import threading
-import screenshot as scrnsht
+import etc.screenshot as scrnsht
+import etc.codepicgen as codepicgen
+import etc.handyUtils as hutils
 
 logger.add("logs/{time}.log")
 print("Finished importing, initializing functions...")
@@ -285,10 +286,7 @@ async def altNameAddCommand(msg):
     else:
         reply = await msg.get_reply_message()
         # Cleaning up the input
-        nameToSave = msg.raw_text.lower().replace('/remember ', '').replace('/remember@aethermgr_bot ', '').replace(
-            '/remember', '').replace('/remember@aethermgr_bot', '').replace('\"', '').replace('\'', '').replace("\\",
-                                                                                                                '').replace(
-            ";", "")
+        nameToSave = msg.raw_text.lower().replace('/remember ', '').replace('/remember@aethermgr_bot ', '').replace('/remember', '').replace('/remember@aethermgr_bot', '').replace('\"', '').replace('\'', '').replace("\\",'').replace(";", "")
         while "  " in nameToSave:
             nameToSave - nameToSave.replace("  ", " ")
         # Checking if name is too short or too long
@@ -1291,9 +1289,9 @@ async def memeui(msg):
         requests_per_this_session += 1
         choise = randint(-1, 5)
         if choise == 1:
-            await bot.send_file(msg.chat_id, 'miui.ogg', voice_note=True, reply_to=msg)
+            await bot.send_file(msg.chat_id, 'etc/miui.ogg', voice_note=True, reply_to=msg)
         elif choise == 2:
-            await bot.send_file(msg.chat_id, 'ximi.jpg', reply_to=msg)
+            await bot.send_file(msg.chat_id, 'etc/ximi.jpg', reply_to=msg)
         else:
             pass
 
@@ -1380,7 +1378,7 @@ async def counter(msg):
     requestPure = requestRaw.replace('сколько будет ', '').replace('\"', '').replace('\'', '').replace('\\',
                                                                                                        '/').replace('[',
                                                                                                                     '').replace(
-        ']', '').replace("'", '').replace(",", "").replace(":", "/")
+        ']', '').replace("'", '').replace(",", "").replace(":", "/").replace("^", "**")
     lettersSearch = re.search('[а-яА-ЯA-Za-z]', requestPure)
     if lettersSearch:
         myReply = await msg.reply("❌ **__Буквы в выражении запрещены__**")
@@ -1388,9 +1386,10 @@ async def counter(msg):
         await myReply.delete()
         return
     myReply, result = None, None
+    requestReady = hutils.convertBeforeProccessing(requestPure)
     with time_limit(3):
         try:
-            result = eval(requestPure)
+            result = eval(requestReady)
         except ZeroDivisionError:
             myReply = await msg.reply("❌ **__Напоминаю, что на ноль делить нельзя__**")
         except TimeoutException:
@@ -1409,8 +1408,6 @@ async def counter(msg):
         else:
             text += "__**"
         myReply = await msg.reply(text)
-        await asyncio.sleep(15)
-        await myReply.delete()
         return
     await asyncio.sleep(5)
     await myReply.delete()
@@ -1455,55 +1452,6 @@ async def anon(msg):
     await asyncio.sleep(5)
     await myReply.delete()
 
-
-# TODO: Rewrite
-# @bot.on(events.NewMessage(pattern=r'(?i)/anon'))
-# @logger.catch
-# async def anon(msg):
-#     global requests_per_this_session
-#     requests_per_this_session += 1
-#     if msg.is_private:
-#         msg_text = msg.raw_text
-#         msg_text = msg_text.lower().split(' ')
-#         if len(msg_text) > 2:
-#             found = False
-#             id = None
-#             msg_text.remove(msg_text[0])
-#             fakename = msg_text[0]
-#             msg_text.remove(msg_text[0])
-#             try:
-#                 target = await bot.get_entity(msg_text[0])
-#                 id = target.id
-#                 found = True
-#             except:
-#                 current_altname = ''
-#                 for i in msg_text:
-#                     if id == None:
-#                         current_altname += i
-#                         id = db_get_id(current_altname)
-#                         if id != 'NotFound':
-#                             found = True
-#                             id = int(id)
-#                     else:
-#                         break
-#             if found:
-#                 target_info = await bot.get_entity(id)
-#                 if target_info.lang_code != None:
-#                     async with bot.conversation(msg.chat_id) as conv:
-#                         my_ask_for_message = await msg.reply('Введите текст сообщения')
-#                         response = await conv.get_response(msg.chat_id)
-#                         text_to_send = response.raw_text + '\n\n\n(c) ' + fakename
-#                     await bot.send_message(id, 'Новое анонимное сообщение:')
-#                     await bot.send_message(id, text_to_send)
-#                     await msg.reply('✅ **__Сообщение передано__**')
-#                 else:
-#                     await msg.reply('❌ **__Пользователь {fname} не запускал чата с ботом__**'.format(fname = str(target_info.first_name)))
-#             else:
-#                 await msg.reply('❌ **__Пользователь не найден__**')
-#         else:
-#             await msg.reply('**__Использование: /anon [YOURFAKENAME] [NAME], где [YOURFAKENAME] - имя, которым вы хотите представиться(лимит - 1 слово), и [NAME] - имя пользователя или альтернативное имя.__**')
-#     else:
-#         await msg.reply('**__Использовать можно только в личных сообщениях с ботом. Начните диалог с ним, чтобы иметь возможность принимать анонимные сообщения__**')
 
 
 @bot.on(events.NewMessage(pattern='/status'))
@@ -1692,7 +1640,6 @@ async def get_link_for_scrn(msg):
                     a = await msg.reply('🔎 **__В процессе...__**')
                     for link in urls_list:
                         if not link == '':
-                            link = link.lower()
                             try:
                                 await asyncio.subprocess.create_subprocess_exec(
                                     await link_screenshot(msg, message, link, a))
@@ -1706,7 +1653,7 @@ async def get_link_for_scrn(msg):
 
 @logger.catch
 async def link_screenshot(event, msg, url, my_msg):
-    with time_limit(60):
+    with time_limit(17):
         try:
             global requests_per_this_session
             requests_per_this_session += 1
@@ -1732,8 +1679,9 @@ async def link_screenshot(event, msg, url, my_msg):
                     code = str(randint(0000,9999))
                     try:
                         scrnsht.makeScreenshot(url, code)
-                    except:
+                    except Exception as e:
                         await bot.send_message(event.chat_id, f"❌ **__Не удалось создать скриншот__**: `{target}`")
+                        logger.error(e)
                         return
                     logger.info(f'Checking {target} for nudity... (Requester: {msg.sender.first_name})')
                     await my_msg.edit('🔎 **__В процессе... (Проверка)__**')
