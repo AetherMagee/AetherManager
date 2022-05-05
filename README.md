@@ -1,4 +1,4 @@
-# AetherManager
+# AetherManager [DISCONTINUED]
 AetherManager is a Telegram bot powered by Telethon, which was created to simplify the process of managing your chats while keeping it clean from notifications about it's actions, spam bots, etc.
 ## What can it do?
 - **Manage your chat** - Basic commands like /mute, /ban, /kick are of course incuded to the bot!
