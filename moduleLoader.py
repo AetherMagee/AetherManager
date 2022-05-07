@@ -24,9 +24,11 @@ def checkModuleIntegrity(pathToModule):
         return False
 
 def loadModule(pathToModule):
-    if checkModuleIntegrity(pathToModule):
+
         path = pathToModule + "/main.py"
         name = path.replace("/main.py", "").replace("/", ".").replace("\\\\", ".").replace("\\", ".")
+        logger.debug("Path: " + path)
+        logger.debug("Name: " + name)
         specs = imputil.spec_from_file_location(name, path)
         mod = imputil.module_from_spec(specs)
         specs.loader.exec_module(mod)
@@ -34,6 +36,6 @@ def loadModule(pathToModule):
 def loadAllModules():
     logger.info("ModLoad started...")
     for element in os.listdir("modules"):
-        if os.path.isdir("modules/" + element):
+        if os.path.isdir("modules/" + element) and checkModuleIntegrity("modules/" + element):
             logger.info("Loading module " + element + "...")
             loadModule("modules/" + element)
