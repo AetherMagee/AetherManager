@@ -1,6 +1,3 @@
-test*
 *pycache*
-config.py
 *config*
-config.py
-aethermanager.py
+*test*

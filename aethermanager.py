@@ -1,7 +1,7 @@
 from loguru import logger
 from telethon import TelegramClient, events
 from telethon.sessions import StringSession as strsession
-import config as cfg
+import credentials as cfg
 
 
 try:
