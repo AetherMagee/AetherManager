@@ -1,3 +1,6 @@
-*test*
 confidential.py
 *pycache*
+*.log
+confidential.py
+*.db
+.vscode
