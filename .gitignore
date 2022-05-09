@@ -4,3 +4,4 @@ confidential.py
 confidential.py
 *.db
 .vscode
+.pytest_cache

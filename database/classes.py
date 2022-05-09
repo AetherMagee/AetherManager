@@ -5,6 +5,7 @@ class dbUser:
     id: int
     firstname: str = ""
     lastname: str = None
+    username: str = None
     phone: int = None
     langcode: str = "ru"
     opendms: bool = False

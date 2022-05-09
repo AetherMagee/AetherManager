@@ -1,0 +1,4 @@
+telethon
+loguru
+pytest
+pytest-ordering

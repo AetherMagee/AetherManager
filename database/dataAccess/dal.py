@@ -4,7 +4,7 @@ from dataclasses import asdict as classAsDict
 from database.db import database as dbConnection
 from dataclasses import astuple as classAsTuple
 
-def writeNewUserEntry(entry: dbUser):
+def writeNewUserEntry(entry: dbUser, commit = True):
     """
     Writes user entry to the database
     """
@@ -15,15 +15,16 @@ def writeNewUserEntry(entry: dbUser):
     command += "?, " * len(classAsTuple(entry))
     command = command[:-2] + ")"
     
-    with Cursor(dbConnection) as cursor:
+    with Cursor(dbConnection, autocommit=commit) as cursor:
         cursor.execute(command, classAsTuple(entry))
 
-def eraseUserEntry(entry: dbUser):
+
+def eraseUserEntry(entry: dbUser, commit = True):
     """
     TESTING PURPOSE ONLY
     """
     command = "DELETE FROM users WHERE id = ?"
-    with Cursor(dbConnection) as cursor:
+    with Cursor(dbConnection, autocommit=commit) as cursor:
         cursor.execute(command, (entry.id, ))
 
 
@@ -37,17 +38,30 @@ def readUserEntryByID(searchRequest: int):
     else:
         return None
 
-# def readUserEntryByPhone(searchRequest: str):
-#     command = "SELECT * FROM users WHERE phone = ?"
-#     with Cursor(dbConnection) as cursor:
-#         cursor.execute(command, (searchRequest, ))
-#         result = cursor.fetchone()
-#     if result:
-#         return dbUser(result[0], result[1], result[2], result[3], result[4], result[5], result[6], result[7])
-#     else:
-#         return None
 
-def editUserEntry(entry: dbUser):
+def readUserEntryByPhone(searchRequest: int):
+    command = "SELECT * FROM users WHERE phone = ?"
+    with Cursor(dbConnection) as cursor:
+        cursor.execute(command, (searchRequest, ))
+        result = cursor.fetchone()
+    if result:
+        return dbUser(result[0], result[1], result[2], result[3], result[4], result[5], result[6], result[7])
+    else:
+        return None
+
+
+def readUserEntryByUsername(searchRequest: str):
+    command = "SELECT * FROM users WHERE username = ?"
+    with Cursor(dbConnection) as cursor:
+        cursor.execute(command, (searchRequest, ))
+        result = cursor.fetchone()
+    if result:
+        return dbUser(result[0], result[1], result[2], result[3], result[4], result[5], result[6], result[7])
+    else:
+        return None
+
+
+def editUserEntry(entry: dbUser, commit = True):
     command = "UPDATE users SET ("
     for element in classAsDict(entry).keys(): 
         if not element == "id":
@@ -56,3 +70,31 @@ def editUserEntry(entry: dbUser):
     command += "?, " * (len(classAsTuple(entry)) - 1)
     command = command[:-2] + ") WHERE id = ?"
     
+    listToWrite = list(classAsTuple(entry))
+    listToWrite.remove(entry.id)
+    listToWrite.append(entry.id)
+    
+    with Cursor(dbConnection, autocommit=commit) as cursor:
+        cursor.execute(command, tuple(listToWrite))
+
+
+def manualCommit():
+    dbConnection.commit()
+
+
+def writeNewChatEntry(entry: dbChat, commit = True):
+    command = "INSERT INTO chats ("
+    for element in classAsDict(entry).keys(): 
+        command += element + ", "
+    command = command[:-2] + ") VALUES ("
+    command += "?, " * len(classAsTuple(entry))
+    command = command[:-2] + ")"
+    
+    with Cursor(dbConnection, autocommit=commit) as cursor:
+        cursor.execute(command, classAsTuple(entry))
+
+
+def eraseChatEntry(entry: dbChat):
+    command = "DELETE FROM chats WHERE chid = ?"
+    with Cursor(dbConnection) as cursor:
+        cursor.execute(command, (entry.chid, ))
