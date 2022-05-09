@@ -94,7 +94,36 @@ def writeNewChatEntry(entry: dbChat, commit = True):
         cursor.execute(command, classAsTuple(entry))
 
 
-def eraseChatEntry(entry: dbChat):
+def eraseChatEntry(entry: dbChat, commit = True):
     command = "DELETE FROM chats WHERE chid = ?"
-    with Cursor(dbConnection) as cursor:
+    with Cursor(dbConnection, autocommit = commit) as cursor:
         cursor.execute(command, (entry.chid, ))
+        
+
+def readChatEntryByID(searchRequest: int):
+    command = "SELECT * FROM chats WHERE chid = ?"
+    with Cursor(dbConnection) as cursor:
+        cursor.execute(command, (searchRequest, ))
+        result = cursor.fetchone()
+    if result:
+        return dbChat(result[0], result[1], result[2], result[3], result[4], result[5], result[6], result[7], result[8])
+    else:
+        return None
+
+
+def editChatEntry(entry: dbChat, commit = True):
+    command = "UPDATE chats SET ("
+    for element in classAsDict(entry).keys(): 
+        if not element == "chid":
+            command += element + ", "
+    command = command[:-2] + ") = ("
+    command += "?, " * (len(classAsTuple(entry)) - 1)
+    command = command[:-2] + ") WHERE chid = ?"
+    
+    listToWrite = list(classAsTuple(entry))
+    listToWrite.remove(entry.chid)
+    listToWrite.append(entry.chid)
+    
+    with Cursor(dbConnection, autocommit=commit) as cursor:
+        cursor.execute(command, tuple(listToWrite))
+        
