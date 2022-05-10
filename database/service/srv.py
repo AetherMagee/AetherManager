@@ -38,7 +38,7 @@ def getUser(searchRequest, errorOnNone = False, createNewIfNone = False):
 
 
 def updateUser(newInstance: dbUser, createNewIfNotFound = False):
-    checkResult = dal.readChatEntryByID(newInstance.id)
+    checkResult = dal.readUserEntryByID(newInstance.id)
     if not checkResult:
         if createNewIfNotFound: 
             dal.writeNewUserEntry(dbUser)
