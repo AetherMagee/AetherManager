@@ -4,6 +4,7 @@ from database.classes import *
 from dataclasses import asdict as asdict
 from aethermanager import logger
 
+
 def generateDB(cursor, database):
     logger.debug("Generating database...")
     command = """CREATE TABLE IF NOT EXISTS "users" (
@@ -41,7 +42,6 @@ if not os.path.exists("database/main.db"):
     database = sqlite3.connect("database/main.db")
     cursor = database.cursor()
     generateDB(cursor, database)
-else: 
+else:
     database = sqlite3.connect("database/main.db")
     cursor = database.cursor()
-    

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+
 @dataclass()
 class dbUser:
     id: int
@@ -11,7 +12,8 @@ class dbUser:
     opendms: bool = False
     balance: int = 0
     reputation: int = 0
-    
+
+
 @dataclass()
 class dbChat:
     chid: int
@@ -27,11 +29,12 @@ class dbChat:
     # 1 - All admins
     # 2 - Admins with "Edit group" permission
     # 3 - Creator only
-    
+
     allowMuteAdmins: bool = False
-    
-class Cursor: 
-    def __init__(self, connection, autocommit = True):
+
+
+class Cursor:
+    def __init__(self, connection, autocommit=True):
         self.connection = connection
         self.autocommit = autocommit
 

@@ -1,4 +1,4 @@
-availibleLangCodes = ["ru", "en"]
+availableLangCodes = ["ru", "en"]
 statusStrings = {
     "main_ru": "✅ **__Онлайн!__**",
     "main_en": "✅ **__Online!__**"
