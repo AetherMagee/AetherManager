@@ -1,5 +1,4 @@
 from database.classes import *
-import sqlite3
 from dataclasses import asdict as classAsDict
 from database.db import database as dbConnection
 from dataclasses import astuple as classAsTuple

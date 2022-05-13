@@ -25,8 +25,8 @@ except Exception:
 # Importing modules
 if __name__ == "__main__":
 
-    from moduleLoader import loadAllModules as lmod
-    lmod()  # WHY THE FUCK WHEN I USE BASIC IMPORT THIS SHIT DOES NOT WORK, BUT IT DOES WHEN I IMPORT IT WITH "FROM", WHAT THE ACTUAL FUCK
+    from moduleLoader import loadAllModules as loadmod
+    loadmod()
 
     logger.success("Online!")
     bot.run_until_disconnected()
