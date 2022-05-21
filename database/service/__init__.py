@@ -2,6 +2,7 @@ from xml.dom import NotFoundErr
 from database.classes import *
 from aethermanager import logger
 import database.dataAccess.dal as dal
+from telethon.tl.types import User as tlUser
 
 
 def writeUser(id: int,
@@ -19,7 +20,7 @@ def writeUser(id: int,
     dal.writeNewUserEntry(instanceToWrite)
 
 
-def getUser(searchRequest, errorOnNone=False, createNewIfNone=False):
+def getUser(searchRequest: int or str or dbUser or tlUser, errorOnNone=False, createNewIfNone=True):
     if isinstance(searchRequest, int):
         result = dal.readUserEntryByID(searchRequest)
         if not result:
@@ -34,7 +35,7 @@ def getUser(searchRequest, errorOnNone=False, createNewIfNone=False):
                 return None
             return result
         return result
-    else:
+    elif isinstance(searchRequest, str):
         result = dal.readUserEntryByUsername(searchRequest)
         if not result:
             if errorOnNone:
@@ -42,9 +43,25 @@ def getUser(searchRequest, errorOnNone=False, createNewIfNone=False):
             else:
                 return None
         return result
+    elif isinstance(searchRequest, tlUser):
+        searchRequest = dbUser(searchRequest.id, searchRequest.first_name, searchRequest.last_name,
+                               searchRequest.username, searchRequest.phone, searchRequest.lang_code)
+    if isinstance(searchRequest, dbUser):
+        result = dal.readUserEntryByID(searchRequest.id)
+        logger.debug(result)
+        if not result:
+            if errorOnNone:
+                raise NotFoundErr
+            if createNewIfNone:
+                dal.writeNewUserEntry(searchRequest)
+                return searchRequest
+        return result
 
 
-def updateUser(newInstance: dbUser, createNewIfNotFound=False):
+def updateUser(newInstance: dbUser or tlUser, createNewIfNotFound=True):
+    if isinstance(newInstance, tlUser):
+        newInstance = dbUser(newInstance.id, newInstance.first_name, newInstance.last_name,
+                             newInstance.username, newInstance.phone, newInstance.lang_code)
     checkResult = dal.readUserEntryByID(newInstance.id)
     if not checkResult:
         if createNewIfNotFound:

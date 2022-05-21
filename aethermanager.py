@@ -24,10 +24,8 @@ except Exception:
 
 # Importing modules
 if __name__ == "__main__":
-
     from moduleLoader import loadAllModules as loadmod
     loadmod()
-
     logger.success("Online!")
     bot.run_until_disconnected()
 else:
