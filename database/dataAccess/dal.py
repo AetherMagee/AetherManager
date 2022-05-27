@@ -74,6 +74,9 @@ def editUserEntry(entry: dbUser, commit=True):
     listToWrite.remove(entry.id)
     listToWrite.append(entry.id)
 
+    print(command)
+    print(str(listToWrite))
+
     with Cursor(dbConnection, autocommit=commit) as cursor:
         cursor.execute(command, tuple(listToWrite))
 

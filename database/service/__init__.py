@@ -17,6 +17,8 @@ def writeUser(id: int,
               ):
     instanceToWrite = dbUser(
         id, firstname, lastname, username, phone, langcode, opendms, balance, reputation)
+    if instanceToWrite.langcode is None:
+        instanceToWrite.langcode = "ru"
     dal.writeNewUserEntry(instanceToWrite)
 
 
@@ -48,13 +50,20 @@ def getUser(searchRequest: int or str or dbUser or tlUser, errorOnNone=False, cr
                                searchRequest.username, searchRequest.phone, searchRequest.lang_code)
     if isinstance(searchRequest, dbUser):
         result = dal.readUserEntryByID(searchRequest.id)
-        logger.debug(result)
         if not result:
             if errorOnNone:
                 raise NotFoundErr
             if createNewIfNone:
                 dal.writeNewUserEntry(searchRequest)
                 return searchRequest
+        if result.firstname != searchRequest.firstname or result.lastname != searchRequest.lastname or result.phone != searchRequest.phone or result.username != searchRequest.username:
+            searchRequest.reputation = result.reputation
+            searchRequest.balance = result.balance
+            if result.langcode is None:
+                searchRequest.langcode = "ru"
+            updateUser(searchRequest)
+        if result.langcode is None:
+            result.langcode = "ru"
         return result
 
 
@@ -64,11 +73,13 @@ def updateUser(newInstance: dbUser or tlUser, createNewIfNotFound=True):
                              newInstance.username, newInstance.phone, newInstance.lang_code)
     checkResult = dal.readUserEntryByID(newInstance.id)
     if not checkResult:
+        logger.debug("Not found")
         if createNewIfNotFound:
             dal.writeNewUserEntry(newInstance)
             return
         else:
             raise NotFoundErr
+    logger.debug("Editing user...")
     dal.editUserEntry(newInstance)
 
 

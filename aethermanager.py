@@ -4,7 +4,9 @@
 # while keeping it clean!
 
 # Importing stuff
+import sys
 from loguru import logger
+# Importing events to let it be conveniently importable from other modules via aethermanager module
 from telethon import TelegramClient, events
 from telethon.sessions import StringSession as strsession
 import confidential as cfg
@@ -18,9 +20,9 @@ try:
     bot = TelegramClient(strsession(cfg.STR_SESSION),
                          cfg.API_ID, cfg.API_HASH, base_logger=logger)
     bot.start(bot_token=cfg.BOT_TOKEN)
-except Exception:
+except:
     logger.exception("Failed to connect to Telegram")
-    exit(1)
+    sys.exit(1)
 
 # Importing modules
 if __name__ == "__main__":

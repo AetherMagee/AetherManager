@@ -11,7 +11,8 @@ async def status(msg):
     logger.debug(
         f"Got /status command from ID{msg.sender.id} CHID{msg.chat.id}")
     requesterInfo = db.getUser(msg.sender, createNewIfNone=True)
-    await msg.reply(statusStrings["main_" + requesterInfo.langcode])
+    langcode = requesterInfo.langcode if requesterInfo.langcode else "ru"
+    await msg.reply(statusStrings["main_" + langcode])
 
 
 @logger.catch
@@ -20,7 +21,7 @@ async def setlang(msg):
     logger.debug(
         f"Got /setlang command from ID{msg.sender.id} CHID{msg.chat.id}")
     langcode = msg.raw_text.replace("/setlang ", "").lower()
-    userInfo = db.getUser(msg.sender.id, createNewIfNone=True)
+    userInfo = db.getUser(msg.sender, createNewIfNone=True)
     if len(langcode) == 2 and langcode in availableLangCodes:
         userInfo.langcode = langcode
         db.updateUser(userInfo)
@@ -48,7 +49,7 @@ async def start(msg):
         await msg.reply(startStrings["first_" + userLangcode])
         await asyncio.sleep(2)
         await msg.reply(startStrings["second_" + userLangcode])
-        await asyncio.sleep(2)
+        await asyncio.sleep(3.5)
         await msg.reply(startStrings["third_" + userLangcode], link_preview=False,
                         buttons=Button.url(startStrings["third_button_" + userLangcode], "https://t.me/aethermgr_bot?startgroup=start"))
 
@@ -57,9 +58,27 @@ async def start(msg):
 @bot.on(events.NewMessage(pattern="/who"))
 async def who(msg):
     logger.debug(f"Got /who from ID{msg.sender.id} CHID-100{msg.chat.id}")
-    if msg.is_reply:
-        targetmsg = await msg.get_reply_message()
-    userFromDb = db.getUser(targetmsg.sender)
-    await msg.reply("Я - дебаг, а ты - чурка, твоя репа с бд - " + str(userFromDb.reputation))
+    try:
+        if msg.is_reply:
+            targetmsg = await msg.get_reply_message()
+        else:
+            return  # Only support reply messages pepeLaugh
+        requesterInfoFromDB = db.getUser(msg.sender)
+        langcode = requesterInfoFromDB.langcode if requesterInfoFromDB.langcode in availableLangCodes else "ru"
+        userFromDb = db.getUser(targetmsg.sender)
+        if targetmsg.sender.last_name:
+            fullname = targetmsg.sender.first_name + " " + targetmsg.sender.last_name
+        else:
+            fullname = targetmsg.sender.first_name
+        await msg.reply(whoStrings["mainMessage_" + langcode].format(
+            name=fullname,
+            uname=targetmsg.sender.username if targetmsg.sender.username else whoStrings[
+                "noNickname_" + langcode],
+            tgid=str(targetmsg.sender.id),
+            rep=str(userFromDb.reputation)))
+    except Exception:
+        await msg.reply(whoStrings["failure_" + langcode])
+        return
+
 
 logger.info("Loaded!")

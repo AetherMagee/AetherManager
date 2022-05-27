@@ -19,3 +19,11 @@ startStrings = {
     "third_button_ru": "Добавить в чат",
     "third_button_en": "Add to chat"
 }
+whoStrings = {
+    "mainMessage_ru": "**__Инфо о пользователе:\n🔎 Имя: {name}\n🔎 Ник: {uname}\n🌟 Telegram ID: {tgid}\n↗ Репутация: {rep}__**",
+    "mainMessage_en": "**__User info:\n🔎 Name: {name}\n🔎 Nickname: {uname}\n🌟 Telegram ID: {tgid}\n↗ Reputation: {rep}__**",
+    "noNickname_ru": "Отсутствует",
+    "noNickname_en": "No nickname",
+    "failure_ru": "❌ **__Ошибка сбора данных__**",
+    "failure_en": "❌ **__Unexpected error__**"
+}
